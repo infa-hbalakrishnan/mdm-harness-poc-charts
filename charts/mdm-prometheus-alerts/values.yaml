@@ -1,0 +1,78 @@
+azure:
+  fileshare:
+    pvc: "mdm-efs-pvc"
+    threshold: "80"
+mdm:
+  cloudServiceProvider: "aws"
+  alert:
+    cpuThrottleRate: "0.1"
+    cpuThrottlePeriod: 15m
+  url:
+    prefix:
+      alertmanager: "am"
+      prometheus: "pr"
+elasticsearch:
+  replication:
+    enabled: false
+    region: ""
+    indexCountThreshold: 1500
+    docsCountThreshold: 100000000
+    permissibleReadErrorsThreshold: 0
+    permissibleWriteErrorsThreshold: 0
+    permissibleStateErrorsThreshold: 0
+  es_additional_replicas: 2
+spark:
+  alert:
+    cpuThrottleRate: "0.15"
+    cpuThrottlePeriod: 15m
+  resourcequota: 80
+monitoring:
+  cloudtrust:
+    prometheus:
+      enabled: true
+  elasticsearch:
+    enabled: true
+    threshold:
+      indicesPerMasterGbHeap: 3000
+      cpu: 90
+      memory: 90
+      disk: 80
+      shard: 80
+    alert:
+      backupRetentionDays: 8
+      lastBackupHours: 8
+  efs:
+    enabled: true
+    throughputThreshold: 80 #in percnetage
+  alertTeam: mdmnext_team
+  sparkNamespace: "mdm-spark" #>${SPARK_NAMESPACE:-${POD_ID}-spark}<#
+  kubernetes:
+    deployments:
+      enabled: true
+  mongodbatlas:
+    snapshots: true
+    alert:
+      userAgeDays: 3
+      totalUserCount: 450
+      tempUserCount: 400
+      lastBackupHours: 8
+      backupRetentionDays: 7
+      diskPartitionPercent: 70
+      diskSpaceDailyUsagePercentage: 10
+      collectionIndexMaxLimit: 100000 #https://docs.atlas.mongodb.com/reference/atlas-limits/#collection-and-index-limits
+  prometheusTargets:
+    alertHoldTime: "5m"
+  coreDNS:
+    cpuThreshold: 80
+  orgAlerts: 
+    enabled: false
+    offset: "30m" #https://prometheus.io/docs/prometheus/latest/querying/basics/#time-durations
+  certAlerts:
+    critical:
+      days: 7
+    warning:
+      days: 30
+
+ingress:
+  domain: ""
+  subDomain: ""

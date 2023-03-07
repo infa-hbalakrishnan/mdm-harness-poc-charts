@@ -1,0 +1,26 @@
+---
+# DeadMansSwitch
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  namespace: "{{.Release.Namespace}}"
+  name: deadmansswitch
+  labels:
+    prometheus: mdm
+    role: alert-rules-mdm
+spec:
+  groups:
+    - name: ./deadmansswitch.rules
+      rules:
+        - alert: DeadMansSwitch
+          expr: vector(1)
+          labels:
+            severity: none
+            alert_group: deadman
+          annotations:
+            message: >
+              No Heartbeat for Prometheus in "{{.Release.Namespace}}"
+            description: |
+              Alert      - No Hearbeat for 6 minutes
+              Namespace  - "{{.Release.Namespace}}"
+              Runbook    - https://infawiki.informatica.com/x/OjGlEg

@@ -1,0 +1,527 @@
+---
+# ABSENT MongoDB
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  namespace: "{{.Release.Namespace}}"
+  name: mongodb-rules-not-reporting
+  labels:
+    prometheus: mdm
+    role: alert-rules-mdm
+spec:
+  groups:
+    - name: ./mdm-mongodb-not-reporting.rules
+      rules:
+        - alert: mdmnext-mongodb-cluster-tier-not-reporting
+          expr: absent(atlas_cluster_info_current_tier) == 1
+          for: 10m
+          labels:
+            severity: critical
+            alert_group: absent
+          annotations:
+            message: >
+              MongoDB Cluster tier not reporting for 10 min
+            description: |
+              Alert      - MongoDB Cluster tier not reporting for 10 min
+              Namespace  - "{{.Release.Namespace}}"
+              Metrics    - atlas_cluster_info_current_tier
+              Runbook    - https://infawiki.informatica.com/display/DF/Runbook+Template      
+        - alert: mdmnext-mongodb-user-count-critical-not-reporting
+          expr: absent(atlas_database_user_permanent_count) == 1
+          for: 15m
+          labels:
+            severity: critical
+            alert_group: absent
+          annotations:
+            message: >
+              MongoDB User Count null or not reporting for 15 min
+            description: |
+              Alert      - MongoDB User Count = {{ "{{" }} $value | printf "%.2f" {{ "}}" }}%
+              Namespace  - "{{.Release.Namespace}}"
+              Metrics    - atlas_database_user_permanent_count
+              Runbook    - https://infawiki.informatica.com/display/DF/Runbook+Template
+        - alert: mdmnext-mongodb-read-tickets-not-reporting
+          expr: >
+            absent(atlas_tickets_available_reads_scalar) == 1
+          for: 5m
+          labels:
+            severity: warning
+            alert_group: absent
+          annotations:
+            message: >
+              MongoDB Read Tickets availability null or not reporting for 5 min
+            description: |
+              Alert      - MongoDB Read Tickets availability null or not reporting for 5 min
+              Namespace  - "{{.Release.Namespace}}"
+              Metrics    - atlas_tickets_available_reads_scalar
+              Runbook    - https://infawiki.informatica.com/display/DF/Runbook+Template
+        - alert: mdmnext-mongodb-write-tickets-not-reporting
+          expr: >
+            absent(atlas_tickets_available_write_scalar) == 1
+          for: 5m
+          labels:
+            severity: warning
+            alert_group: absent
+          annotations:
+            message: >
+              MongoDB Write Tickets availablity null or not reporting for 5 min
+            description: |
+              Alert      - MongoDB Write Tickets availablity null or not reporting for 5 min
+              Namespace  - "{{.Release.Namespace}}"
+              Metrics    - atlas_tickets_available_write_scalar
+              Runbook    - https://infawiki.informatica.com/display/DF/Runbook+Template
+        - alert: mdmnext-mongodb-queued-reads-not-reporting
+          expr: >
+            absent(mongodb_queued_reads) == 1
+          for: 5m
+          labels:
+            severity: warning
+            alert_group: absent
+          annotations:
+            message: >
+              MongoDB Queued Reads null or not reporting for 5 min
+            description: |
+              Alert      - MongoDB Queued Reads null or not reporting for 5 min
+              Namespace  - "{{.Release.Namespace}}"
+              Metrics    - mongodb_queued_reads
+              Runbook    - https://infawiki.informatica.com/display/DF/Runbook+Template
+        - alert: mdmnext-mongodb-queued-writes-not-reporting
+          expr: >
+            absent(mongodb_queued_writes) == 1
+          for: 5m
+          labels:
+            severity: warning
+            alert_group: absent
+          annotations:
+            message: >
+              MongoDB Queued Writes null or not reported for 5 min
+            description: |
+              Alert      - MongoDB Queued Writes null or not reported for 5 min
+              Namespace  - "{{.Release.Namespace}}"
+              Metrics    - mongodb_queued_writes
+              Runbook    - https://infawiki.informatica.com/display/DF/Runbook+Template
+        - alert: mdmnext-mongodb-oplog-window-not-reporting
+          expr: >
+            absent(mongodb_repl_oplog_window_sec) == 1
+          for: 5m
+          labels:
+            severity: warning
+            alert_group: absent
+          annotations:
+            message: >
+              MongoDB Oplog Window {{ "{{" }} $labels.namespace {{ "}}" }} null or not reported for 5 min
+            description: |
+              Alert      - MongoDB Oplog Window null or not reported for 5 min
+              Namespace  - "{{.Release.Namespace}}"
+              Metrics    - mongodb_repl_oplog_window_sec
+              Runbook    - https://infawiki.informatica.com/display/DF/Runbook+Template
+        - alert: mdmnext-mongodb-query-targeting-1000-not-reporting
+          expr: >
+            absent(atlas_query_targeting_scanned_objects_per_returned_scalar) == 1
+          for: 5m
+          labels:
+            severity: warning
+            alert_group: absent
+          annotations:
+            message: >
+              MongoDB Query Targeting metrics null or not reported for 5 min
+            description: |
+              Alert      - MongoDB Query Targeting metrics null or not reported for 5 min
+              Namespace  - "{{.Release.Namespace}}"
+              Metrics    - atlas_query_targeting_scanned_objects_per_returned_scalar
+              Runbook    - https://infawiki.informatica.com/display/DF/Runbook+Template
+        - alert: mdmnext-mongodb-cpu-user-not-reporting
+          expr: >
+            absent(atlas_process_normalized_cpu_user_percent) == 1
+          for: 5m
+          labels:
+            severity: warning
+            alert_group: absent
+          annotations:
+            message: >
+              MongoDB User CPU metrics {{ "{{" }} $labels.namespace {{ "}}" }} null or not reported for 5 min
+            description: |
+              Alert      - MongoDB User CPU metrics null or not reported for 5 min
+              Namespace  - "{{.Release.Namespace}}"
+              Metrics    - atlas_process_normalized_cpu_user_percent
+              Runbook    - https://infawiki.informatica.com/display/DF/Runbook+Template
+        - alert: mdmnext-mongodb-connections-max-not-reporting
+          expr: >
+            absent(mongodb_connections_current) == 1
+            OR absent(mongodb_connections_available) == 1
+          for: 5m
+          labels:
+            severity: warning
+            alert_group: absent
+          annotations:
+            message: >
+              MongoDB Connection Limit metrics null or not reported for 5 min
+            description: |
+              Alert      - MongoDB Connection Limit null or not reported for 5 min
+              Namespace  - "{{.Release.Namespace}}"
+              Metrics    - mongodb_connections_available
+              Runbook    - https://infawiki.informatica.com/display/DF/Runbook+Template
+        - alert: mdmnext-mongodb-scan-and-order-not-reporting
+          expr: >
+            absent(atlas_operations_scan_and_order_scalar_per_second) == 1
+          for: 5m
+          labels:
+            severity: warning
+            alert_group: absent
+          annotations:
+            message: >
+              MongoDB Scan and Order null or not reported for 5 min
+            description: |
+              Alert      - MongoDB Scan and Order null or not reported for 5 min
+              Namespace  - "{{.Release.Namespace}}"
+              Metrics    - atlas_operations_scan_and_order_scalar_per_second
+              Runbook    - https://infawiki.informatica.com/display/DF/Runbook+Template
+        - alert: mdmnext-mongodb-disk-usage-percent-not-reporting
+          expr: >
+            absent(atlas_disk_partition_space_percent_used_percent) == 1
+          for: 5m
+          labels:
+            severity: warning
+            alert_group: absent
+          annotations:
+            message: >
+              MongoDB Disk Usage {{ "{{" }} $labels.namespace {{ "}}" }} null or not reported for 5 min
+            description: |
+              Alert      - MongoDB Disk Usage null or not reported for 5 min
+              Namespace  - "{{.Release.Namespace}}"
+              Metrics    - atlas_disk_partition_space_percent_used_percent
+              Runbook    - https://infawiki.informatica.com/display/DF/Runbook+Template
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  namespace: "{{.Release.Namespace}}"
+  name: mongodb-rules
+  labels:
+    prometheus: mdm
+    role: alert-rules-mdm
+spec:
+  groups:
+    - name: ./mdm-mongodb.rules
+      rules:
+        - alert: mdmnext-mongodb-x509-user-age
+          expr: atlas_database_user_age_days{namespace="{{ .Release.Namespace }}",alert_group="mongodb"}  > {{ .Values.monitoring.mongodbatlas.alert.userAgeDays }}
+          labels:
+            severity: warning
+          annotations:
+            message: >
+              MongoDB X509 user age is exceeded "{{ .Values.monitoring.mongodbatlas.alert.userAgeDays }}" in {{ .Release.Namespace }} mongodb.
+            description: |
+              Alert     -  MongoDB X509 user age is exceeded "{{ .Values.monitoring.mongodbatlas.alert.userAgeDays }}" in {{ .Release.Namespace }} mongodb.
+              Runbook   -  https://infawiki.informatica.com/display/DF/MDMNRB140+-+MongoDB+X509+user+age+is+exceeded
+              Group     -  {{ "{{" }} $labels.alert_group {{ "}}" }}
+              Namespace -  {{ "{{" }} $labels.namespace {{ "}}" }}
+        - alert: mdmnext-mongodb-cluster-tier-scaledown
+          expr: ((atlas_cluster_info_current_tier{namespace="{{ .Release.Namespace }}",alert_group="mongodb"} - atlas_cluster_info_current_tier{namespace="{{ .Release.Namespace }}",alert_group="mongodb"} offset 15m)) < 0  
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            message: >
+              MongoDB cluster is scaled down in  {{ "{{" }} $labels.namespace {{ "}}" }}
+            description: |
+              Alert      - MongoDB cluster is scaled down
+              Namespace  - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Group      - {{ "{{" }} $labels.alert_group {{ "}}" }}
+              Hostname   - {{ "{{" }} $labels.host {{ "}}" }}
+              Runbook    - https://infawiki.informatica.com/display/DF/Runbook+Template
+        - alert: mdmnext-mongodb-cluster-tier-scaleup
+          expr: ((atlas_cluster_info_current_tier{namespace="{{ .Release.Namespace }}",alert_group="mongodb"} - atlas_cluster_info_current_tier{namespace="{{ .Release.Namespace }}",alert_group="mongodb"} offset 15m)) > 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            message: >
+              MongoDB cluster is scaled up in  {{ "{{" }} $labels.namespace {{ "}}" }}
+            description: |
+              Alert      - MongoDB cluster is scaled up
+              Namespace  - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Group      - {{ "{{" }} $labels.alert_group {{ "}}" }}
+              Hostname   - {{ "{{" }} $labels.host {{ "}}" }}
+              Runbook    - https://infawiki.informatica.com/display/DF/Runbook+Template
+        - alert: mdmnext-mongodb-user-count-critical
+          expr: sum by (alert_group) (atlas_database_user_permanent_count) + sum by (alert_group) (atlas_database_user_temporary_count) >= {{ .Values.monitoring.mongodbatlas.alert.totalUserCount }}
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            message: >
+              MongoDB Total User Count {{ "{{" }} $labels.namespace {{ "}}" }} >= {{ .Values.monitoring.mongodbatlas.alert.totalUserCount }} for 15 min
+            description: |
+              Alert      - MongoDB User Count = {{ "{{" }} $value | printf "%.2f" {{ "}}" }}%
+              Namespace  - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Group      - {{ "{{" }} $labels.alert_group {{ "}}" }}
+              Hostname   - {{ "{{" }} $labels.host {{ "}}" }}
+              Runbook    - https://infawiki.informatica.com/display/DF/Runbook+Template
+        - alert: mdmnext-mongodb-temporary-user-count-critical
+          expr: sum by (alert_group,cluster_name) (atlas_database_user_temporary_count) >= {{ .Values.monitoring.mongodbatlas.alert.tempUserCount }}
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            message: >
+              MongoDB Temporary User's Count {{ "{{" }} $labels.namespace {{ "}}" }} >= {{ .Values.monitoring.mongodbatlas.alert.tempUserCount }} for 15 min
+            description: |
+              Alert      - MongoDB Temporary User's Count = {{ "{{" }} $value | printf "%.2f" {{ "}}" }}%
+              Namespace  - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Group      - {{ "{{" }} $labels.alert_group {{ "}}" }}
+              Hostname   - {{ "{{" }} $labels.host {{ "}}" }}
+              Runbook    - https://infawiki.informatica.com/display/DF/Runbook+Template
+        - alert: mdmnext-mongodb-read-tickets-critical
+          expr: >
+            sum by (alert_group,hostname,group,namespace) (atlas_tickets_available_reads_scalar) /
+            max by (alert_group,hostname,group,namespace) (atlas_tickets_available_reads_scalar) < 0.25
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            message: >
+              MongoDB Read Tickets {{ "{{" }} $labels.namespace {{ "}}" }} < 25% available for 15 min
+            description: |
+              Alert      - MongoDB Read Tickets Available = {{ "{{" }} $value | printf "%.2f" {{ "}}" }}%
+              Namespace  - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Group      - {{ "{{" }} $labels.alert_group {{ "}}" }}
+              Hostname   - {{ "{{" }} $labels.hostname {{ "}}" }}
+              Runbook    - https://infawiki.informatica.com/display/DF/Runbook+Template
+        - alert: mdmnext-mongodb-write-tickets-critical
+          expr: >
+            sum by (alert_group,hostname,group,namespace) (atlas_tickets_available_write_scalar) /
+            max by (alert_group,hostname,group,namespace) (atlas_tickets_available_write_scalar) < 0.25
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            message: >
+              MongoDB Write Tickets {{ "{{" }} $labels.namespace {{ "}}" }} < 25% available for 15 min
+            description: |
+              Alert      - MongoDB Write Tickets Available = {{ "{{" }} $value | printf "%.2f" {{ "}}" }}%
+              Namespace  - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Group      - {{ "{{" }} $labels.alert_group {{ "}}" }}
+              Hostname   - {{ "{{" }} $labels.hostname {{ "}}" }}
+              Runbook    - https://infawiki.informatica.com/display/DF/Runbook+Template
+        - alert: mdmnext-mongodb-queued-reads
+          expr: >
+            mongodb_queued_reads > 100
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            message: >
+              MongoDB Queued Reads {{ "{{" }} $labels.namespace {{ "}}" }} > 100 for 2 minutes
+            description: |
+              Alert      - MongoDB Queued Reads = {{ "{{" }} $value | printf "%.2f" {{ "}}" }}
+              Namespace  - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Group      - {{ "{{" }} $labels.alert_group {{ "}}" }}
+              Hostname   - {{ "{{" }} $labels.hostname {{ "}}" }}
+              Runbook    - https://infawiki.informatica.com/display/DF/Runbook+Template
+        - alert: mdmnext-mongodb-queued-writes
+          expr: >
+            mongodb_queued_writes > 100
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            message: >
+              MongoDB Queued Writes {{ "{{" }} $labels.namespace {{ "}}" }} > 100 for 2 minutes
+            description: |
+              Alert      - MongoDB Queued Writes = {{ "{{" }} $value | printf "%.2f" {{ "}}" }}
+              Namespace  - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Group      - {{ "{{" }} $labels.alert_group {{ "}}" }}
+              Hostname   - {{ "{{" }} $labels.hostname {{ "}}" }}
+              Runbook    - https://infawiki.informatica.com/display/DF/Runbook+Template
+        - alert: mdmnext-mongodb-oplog-window
+          expr: >
+            mongodb_repl_oplog_window_sec < 3600
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            message: >
+              MongoDB Oplog Window {{ "{{" }} $labels.namespace {{ "}}" }} < 1 Hour (3600 sec)
+            description: |
+              Alert      - MongoDB Oplog Window = {{ "{{" }} $value | printf "%.2f" {{ "}}" }} seconds
+              Namespace  - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Group      - {{ "{{" }} $labels.alert_group {{ "}}" }}
+              Hostname   - {{ "{{" }} $labels.hostname {{ "}}" }}
+              Runbook    - https://infawiki.informatica.com/display/DF/Runbook+Template
+        - alert: mdmnext-mongodb-query-targeting-1000
+          expr: >
+            atlas_query_targeting_scanned_objects_per_returned_scalar > 1000
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            message: >
+              MongoDB Query Targeting Returned {{ "{{" }} $labels.namespace {{ "}}" }} > 1000 objects
+            description: |
+              Alert      - MongoDB Query Targeting Returned = {{ "{{" }} $value | printf "%.2f" {{ "}}" }} objects
+              Namespace  - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Group      - {{ "{{" }} $labels.alert_group {{ "}}" }}
+              Hostname   - {{ "{{" }} $labels.hostname {{ "}}" }}
+              Runbook    - https://infawiki.informatica.com/display/DF/Runbook+Template
+        - alert: mdmnext-mongodb-cpu-user
+          expr: >
+            atlas_process_normalized_cpu_user_percent > 90
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            message: >
+              MongoDB User CPU {{ "{{" }} $labels.namespace {{ "}}" }} > 90% for 10 min
+            description: |
+              Alert      - MongoDB User CPU = {{ "{{" }} $value | printf "%.2f" {{ "}}" }}%
+              Namespace  - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Group      - {{ "{{" }} $labels.alert_group {{ "}}" }}
+              Hostname   - {{ "{{" }} $labels.hostname {{ "}}" }}
+              Runbook    - https://infawiki.informatica.com/display/DF/Runbook+Template
+        - alert: mdmnext-mongodb-connections-max
+          expr: >
+            mongodb_connections_current / (mongodb_connections_available + mongodb_connections_current) * 100 > 85
+          for: 30m
+          labels:
+            severity: critical
+          annotations:
+            message: >
+              MongoDB Connection Limit {{ "{{" }} $labels.namespace {{ "}}" }} > 85% used for 30 min
+            description: |
+              Alert      - MongoDB Connection Limit = {{ "{{" }} $value | printf "%.2f" {{ "}}" }}%
+              Namespace  - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Group      - {{ "{{" }} $labels.alert_group {{ "}}" }}
+              Hostname   - {{ "{{" }} $labels.hostname {{ "}}" }}
+              Runbook    - https://infawiki.informatica.com/display/DF/Runbook+Template
+        - alert: mdmnext-mongodb-scan-and-order
+          expr: >
+            atlas_operations_scan_and_order_scalar_per_second > 1000
+          for: 30m
+          labels:
+            severity: critical
+          annotations:
+            message: >
+              MongoDB Scan and Order {{ "{{" }} $labels.namespace {{ "}}" }} > 1000
+            description: |
+              Alert      - MongoDB Scan and Order = {{ "{{" }} $value | printf "%.2f" {{ "}}" }}%
+              Namespace  - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Group      - {{ "{{" }} $labels.alert_group {{ "}}" }}
+              Hostname   - {{ "{{" }} $labels.hostname {{ "}}" }}
+              Runbook    - https://infawiki.informatica.com/display/DF/Runbook+Template
+        - alert: mdmnext-mongodb-disk-usage-percent
+          expr: >
+            atlas_disk_partition_space_percent_used_percent >= {{.Values.monitoring.mongodbatlas.alert.diskPartitionPercent}}
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            message: >
+              MongoDB Disk Usage {{ "{{" }} $labels.namespace {{ "}}" }} >= {{.Values.monitoring.mongodbatlas.alert.diskPartitionPercent}}%
+            description: |
+              Alert      - MongoDB Disk Usage = {{ "{{" }} $value | printf "%.2f" {{ "}}" }}%
+              Namespace  - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Group      - {{ "{{" }} $labels.alert_group {{ "}}" }}
+              Hostname   - {{ "{{" }} $labels.hostname {{ "}}" }}
+              Runbook    - https://infawiki.informatica.com/display/DF/MDMNRB108+-+Increase+MongoDB+Disk+space
+        - alert: mdmnext-mongodb-db-stats-indexes-not-reporting
+          expr: >
+            absent(mongodb_db_stats_indexes{namespace=~"{{ .Release.Namespace }}"}) == 1
+          for: 5m
+          labels:
+            severity: warning
+            alert_group: absent
+          annotations:
+            message: >
+              MongoDB Database indexes stats availablity null or not reporting for 5 min
+            description: |
+              Alert      - MongoDB Database indexes stats availablity null or not reporting for 5 min
+              Namespace  - "{{.Release.Namespace}}"
+              Metrics    - mongodb_db_stats_indexes
+              Runbook    - https://infawiki.informatica.com/display/DF/Runbook+Template
+        - alert: mdmnext-mongodb-db-stats-collections-not-reporting
+          expr: >
+            absent(mongodb_db_stats_collections{namespace=~"{{ .Release.Namespace }}"}) == 1
+          for: 5m
+          labels:
+            severity: warning
+            alert_group: absent
+          annotations:
+            message: >
+              MongoDB Database collections stats availablity null or not reporting for 5 min
+            description: |
+              Alert      - MongoDB Database collections stats availablity null or not reporting for 5 min
+              Namespace  - "{{.Release.Namespace}}"
+              Metrics    - mongodb_db_stats_collections
+              Runbook    - https://infawiki.informatica.com/display/DF/Runbook+Template
+        - alert: mdmnext-mongodb-collections-indexes-total
+          expr: >
+            sum by (alert_group) (max by (alert_group,db_name) (mongodb_db_stats_indexes{namespace=~"{{ .Release.Namespace }}"}))+
+            sum by (alert_group) (max by (alert_group,db_name) (mongodb_db_stats_collections{namespace=~"{{ .Release.Namespace }}"})) > {{ .Values.monitoring.mongodbatlas.alert.collectionIndexMaxLimit }}
+          labels:
+            severity: warning
+          annotations:
+            message: >
+              Max MongoDB collections and indexes exceeded "{{.Release.Namespace}}".
+            description: |
+              Alert     - Max MongoDB collections and indexes exceeded "{{.Release.Namespace}}".
+              Runbook   - https://infawiki.informatica.com/display/DF/Runbook+Template
+        {{- if .Values.monitoring.mongodbatlas.snapshots }}
+        - alert: mdmnext-mongodb-atlas-last-backup-not-reporting
+          expr: >
+            absent(atlas_snapshot_created_timestamp_seconds) == 1
+          for: 4h
+          labels:
+            severity: critical
+            alert_group: absent
+          annotations:
+            message: >
+              {{ "{{" }} $labels.cluster_name {{ "}}" }}, MongoDB Atlas backup metrics NOT reporting during last {{.Values.monitoring.mongodbatlas.alert.lastBackupHours}} hours
+            description: |
+              Alert     - Metrics for atlas_snapshot_created_timestamp_seconds either null or not reporting over 4 hours
+              Namespace  - "{{.Release.Namespace}}"
+              Metrics    - atlas_snapshot_created_timestamp_seconds
+              Runbook   - https://infawiki.informatica.com/display/DF/MDMNRB110+-+Check+mongo+DB+snapshots
+        - alert: mdmnext-mongodb-atlas-backup-retention
+          expr: (time()-atlas_snapshot_created_timestamp_seconds)/86400 > {{.Values.monitoring.mongodbatlas.alert.backupRetentionDays}}
+          for: 4h
+          labels:
+            severity: warning
+          annotations:
+            message: >
+              Snapshot ID {{ "{{" }} $labels.snapshot_id {{ "}}" }} in MongoDB cluster - {{ "{{" }} $labels.cluster_name {{ "}}" }} is older than {{.Values.monitoring.mongodbatlas.alert.backupRetentionDays}} days.
+            description: |
+              AppRole   - {{ "{{" }} $labels.applicationrole {{ "}}" }}
+              Job       - {{ "{{" }} $labels.job {{ "}}" }}
+              Pod ID    - {{ "{{" }} $labels.pod_id {{ "}}" }}
+              Instance  - {{ "{{" }} $labels.host {{ "}}" }}
+              Runbook   - https://infawiki.informatica.com/display/DF/Runbook+Template
+        - alert: mdmnext-mongodb-atlas-last-backup
+          expr: min((time()-atlas_snapshot_created_timestamp_seconds)/3600) > {{.Values.monitoring.mongodbatlas.alert.lastBackupHours}}
+          for: 4h
+          labels:
+            severity: warning
+          annotations:
+            message: >
+              {{ "{{" }} $labels.cluster_name {{ "}}" }}, MongoDB Atlas backup was NOT created during last {{.Values.monitoring.mongodbatlas.alert.lastBackupHours}} hours
+            description: |
+              AppRole   - {{ "{{" }} $labels.applicationrole {{ "}}" }}
+              Job       - {{ "{{" }} $labels.job {{ "}}" }}
+              Pod ID    - {{ "{{" }} $labels.pod_id {{ "}}" }}
+              Instance  - {{ "{{" }} $labels.host {{ "}}" }}
+              Runbook   - https://infawiki.informatica.com/display/DF/Runbook+Template
+              {{- end }}
+        - alert: mdmnext-mongodb-24h-disk-growth
+          expr: >
+            round(atlas_disk_partition_space_percent_used_percent) - round(atlas_disk_partition_space_percent_used_percent offset 1d) >= {{.Values.monitoring.mongodbatlas.alert.diskSpaceDailyUsagePercentage}}
+          labels:
+            severity: warning
+          annotations:
+            message: >
+              MongoDB 24h Disk Growth >= {{.Values.monitoring.mongodbatlas.alert.diskSpaceDailyUsagePercentage}}%
+            description: |
+              Alert      - MongoDB Disk Growth = {{ "{{" }} $value | printf "%.2f" {{ "}}" }}%
+              Namespace  - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Group      - {{ "{{" }} $labels.alert_group {{ "}}" }}
+              Hostname   - {{ "{{" }} $labels.hostname {{ "}}" }}
+              Runbook    - https://infawiki.informatica.com/display/DF/Runbook+Template

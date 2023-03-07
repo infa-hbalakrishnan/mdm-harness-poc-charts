@@ -1,0 +1,290 @@
+---
+# Prometheus UP metric
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  namespace: "{{.Release.Namespace}}"
+  name: service-rules-targets
+  labels:
+    prometheus: mdm
+    role: alert-rules-mdm
+spec:
+  groups:
+    - name: ./mdm-target.rules
+      rules:
+        - alert: mdmnext-prometheus-target-down
+          expr: up == 0
+          for: "{{ .Values.monitoring.prometheusTargets.alertHoldTime }}"
+          labels:
+            severity: critical
+            alert_group: system
+          annotations:
+            message: >
+              Prometheus target {{ "{{" }} $labels.job {{ "}}" }} is down in {{ "{{" }} $labels.namespace {{ "}}" }}
+            description: |
+              Alert     - Prometheus target {{ "{{" }} $labels.job {{ "}}" }} is down in {{ "{{" }} $labels.namespace {{ "}}" }}
+              Namespace - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Runbook   - https://infawiki.informatica.com/display/DF/Runbook+Template
+---
+# CPU
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  namespace: "{{.Release.Namespace}}"
+  name: service-rules-cpu
+  labels:
+    {{- if .Values.monitoring.cloudtrust.prometheus.enabled }}
+    app: prometheus-operator
+    release: monitoringaddon
+    {{- else }}
+    prometheus: mdm
+    role: alert-rules-mdm
+    {{- end }}
+spec:
+  groups:
+    - name: ./mdm-cpu.rules
+      rules:
+        - alert: mdmnext-service-system-cpu-usage-critical
+          expr: (system_cpu_usage{namespace="{{.Release.Namespace}}"}) * 100 >= 90
+          for: 20m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: critical
+            alert_group: system
+          annotations:
+            message: >
+              {{ "{{" }} $labels.service {{ "}}" }}, system cpu usage >= 90% for 20 min in {{ "{{" }} $labels.namespace {{ "}}" }}
+            description: |
+              Alert     - System CPU Usage = {{ "{{" }} $value | printf "%.2f" {{ "}}" }}% / 20 min in {{ "{{" }} $labels.namespace {{ "}}" }}
+              Service   - {{ "{{" }} $labels.service {{ "}}" }}
+              Namespace - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Pod       - {{ "{{" }} $labels.pod {{ "}}" }}
+              Instance  - {{ "{{" }} $labels.instance {{ "}}" }}
+              Runbook   - https://infawiki.informatica.com/display/DF/Runbook+Template
+        - alert: mdmnext-service-process-cpu-usage-critical
+          expr: (process_cpu_usage{namespace="{{.Release.Namespace}}"}) * 100 >= 90
+          for: 20m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: critical
+            alert_group: system
+          annotations:
+            message: >
+              {{ "{{" }} $labels.service {{ "}}" }}, process cpu usage >= 90% for 20 min in {{ "{{" }} $labels.namespace {{ "}}" }}
+            description: |
+              Alert     - Process CPU Usage = {{ "{{" }} $value | printf "%.2f" {{ "}}" }}% / 20 min in {{ "{{" }} $labels.namespace {{ "}}" }}
+              Service   - {{ "{{" }} $labels.service {{ "}}" }}
+              Namespace - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Pod       - {{ "{{" }} $labels.pod {{ "}}" }}
+              Instance  - {{ "{{" }} $labels.instance {{ "}}" }}
+              Runbook   - https://infawiki.informatica.com/display/DF/Runbook+Template
+---
+# MEMORY
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  namespace: "{{.Release.Namespace}}"
+  name: service-rules-memory
+  labels:
+    {{- if .Values.monitoring.cloudtrust.prometheus.enabled }}
+    app: prometheus-operator
+    release: monitoringaddon
+    {{- else }}
+    prometheus: mdm
+    role: alert-rules-mdm
+    {{- end }}
+spec:
+  groups:
+    - name: ./mdm-memory.rules
+      rules:
+        - alert: mdmnext-service-memory-usage-critical
+          expr: >
+            sum by (alert_group,service,pod,namespace,instance) (jvm_memory_used_bytes{namespace="{{.Release.Namespace}}"}) /
+            sum by (alert_group,service,pod,namespace,instance) (jvm_memory_max_bytes{namespace="{{.Release.Namespace}}"}) * 100 > 90
+          for: 15m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: critical
+            alert_group: system
+          annotations:
+            message: >
+              {{ "{{" }} $labels.service {{ "}}" }}, memory >= 90% for 15 min in {{ "{{" }} $labels.namespace {{ "}}" }}
+            description: |
+              Alert     - Memory = {{ "{{" }} $value | printf "%.2f" {{ "}}" }}% / 15 min in {{ "{{" }} $labels.namespace {{ "}}" }}
+              Service   - {{ "{{" }} $labels.service {{ "}}" }}
+              Namespace - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Pod       - {{ "{{" }} $labels.pod {{ "}}" }}
+              Instance  - {{ "{{" }} $labels.instance {{ "}}" }}
+              Runbook   - https://infawiki.informatica.com/display/DF/Runbook+Template
+        - alert: mdmnext-service-memory-minor-gc-critical
+          expr: >
+            rate(jvm_gc_pause_seconds_sum{namespace="{{.Release.Namespace}}",action="end of minor GC"}[1m]) /
+            rate(jvm_gc_pause_seconds_count{namespace="{{.Release.Namespace}}",action="end of minor GC"}[1m]) >= 20
+          for: 5m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: critical
+            alert_group: system
+          annotations:
+            message: >
+              {{ "{{" }} $labels.service {{ "}}" }}, Minor GC pause rate > 20ms for 5 min in {{ "{{" }} $labels.namespace {{ "}}" }}
+            description: |
+              Alert     - Minor GC pause rate = {{ "{{" }} $value | printf "%.2f" {{ "}}" }}ms / 5 min in {{ "{{" }} $labels.namespace {{ "}}" }}
+              Service   - {{ "{{" }} $labels.service {{ "}}" }}
+              Namespace - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Pod       - {{ "{{" }} $labels.pod {{ "}}" }}
+              Instance  - {{ "{{" }} $labels.instance {{ "}}" }}
+              Runbook   - https://infawiki.informatica.com/display/DF/Runbook+Template
+        - alert: mdmnext-service-memory-metaspace-usage-critical
+          expr: >
+            sum by (alert_group,service,pod,namespace,instance) (jvm_memory_used_bytes{namespace="{{.Release.Namespace}}",id="Metaspace"}) /
+            sum by (alert_group,service,pod,namespace,instance) (jvm_memory_max_bytes{namespace="{{.Release.Namespace}}"}) * 100 >= 80
+          for: 15m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: critical
+            alert_group: system
+          annotations:
+            message: >
+              {{ "{{" }} $labels.service {{ "}}" }}, memory metaspace >= 80% for 15 min in {{ "{{" }} $labels.namespace {{ "}}" }}
+            description: |
+              Alert     - Memory Metaspace = {{ "{{" }} $value | printf "%.2f" {{ "}}" }}% / 15 min in {{ "{{" }} $labels.namespace {{ "}}" }}
+              Service   - {{ "{{" }} $labels.service {{ "}}" }}
+              Namespace - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Pod       - {{ "{{" }} $labels.pod {{ "}}" }}
+              Instance  - {{ "{{" }} $labels.instance {{ "}}" }}
+              Runbook   - https://infawiki.informatica.com/display/DF/Runbook+Template
+---
+# ABSENT, CPU
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  namespace: "{{.Release.Namespace}}"
+  name: service-rules-cpu-not-reporting
+  labels:
+    {{- if .Values.monitoring.cloudtrust.prometheus.enabled }}
+    app: prometheus-operator
+    release: monitoringaddon
+    {{- else }}
+    prometheus: mdm
+    role: alert-rules-mdm
+    {{- end }}
+spec:
+  groups:
+    - name: ./mdm-cpu-not-reporting.rules
+      rules:
+        - alert: mdmnext-service-system-cpu-usage-not-reporting
+          expr: absent(system_cpu_usage{namespace="{{.Release.Namespace}}"}) == 1
+          for: 5m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: warning
+            alert_group: absent
+          annotations:
+            message: >
+              System cpu usage null or not reporting for 5 min in "{{.Release.Namespace}}"
+            description: |
+              Alert      - System CPU Usage null or not reporting for 5 min in "{{.Release.Namespace}}"
+              Namespace  - "{{.Release.Namespace}}"
+              Metrics    - system_cpu_usage
+              Runbook    - https://infawiki.informatica.com/display/DF/Runbook+Template
+        - alert: mdmnext-service-process-cpu-usage-not-reporting
+          expr: absent(process_cpu_usage{namespace="{{.Release.Namespace}}"}) == 1
+          for: 5m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: warning
+            alert_group: absent
+          annotations:
+            message: >
+              Process cpu usage null or not reporting for 5 min in "{{.Release.Namespace}}"
+            description: |
+              Alert        - Process CPU Usage null or not reporting for 5 min in "{{.Release.Namespace}}"
+              Namespace    - "{{.Release.Namespace}}"
+              Metrics      - process_cpu_usage
+              Runbook      - https://infawiki.informatica.com/display/DF/Runbook+Template
+        - alert: mdmnext-service-cpu-load-not-reporting
+          expr: absent(system_load_average_1m{namespace="{{.Release.Namespace}}"}) == 1
+          for: 5m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: warning
+            alert_group: absent
+          annotations:
+            message: >
+              System load null or not reporting for 5 min in "{{.Release.Namespace}}"
+            description: |
+              Alert     - System Load null or not reporting for 5 min in "{{.Release.Namespace}}"
+              Namespace  - "{{.Release.Namespace}}"
+              Metrics    - system_load_average_1m
+              Runbook   - https://infawiki.informatica.com/display/DF/Runbook+Template
+---
+# ABSENT, MEMORY
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  namespace: "{{.Release.Namespace}}"
+  name: service-rules-memory-not-reporting
+  labels:
+    {{- if .Values.monitoring.cloudtrust.prometheus.enabled }}
+    app: prometheus-operator
+    release: monitoringaddon
+    {{- else }}
+    prometheus: mdm
+    role: alert-rules-mdm
+    {{- end }}
+spec:
+  groups:
+    - name: ./mdm-memory-not-reporting.rules
+      rules:
+        - alert: mdmnext-service-memory-usage-not-reporting
+          expr: >
+            absent(jvm_memory_used_bytes{namespace="{{.Release.Namespace}}"}) == 1
+            OR absent(jvm_memory_max_bytes{namespace="{{.Release.Namespace}}"}) == 1
+          for: 5m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: warning
+            alert_group: absent
+          annotations:
+            message: >
+              Memory metrics null or not reported for 5 min in "{{.Release.Namespace}}"
+            description: |
+              Alert     - Memory metrics null or not reported for 5 min in "{{.Release.Namespace}}"
+              Namespace  - "{{.Release.Namespace}}"
+              Metrics    - jvm_memory_max_bytes
+              Runbook   - https://infawiki.informatica.com/display/DF/Runbook+Template
+        - alert: mdmnext-service-memory-minor-gc-not-reporting
+          expr: >
+            absent(jvm_gc_pause_seconds_sum{namespace="{{.Release.Namespace}}",action="end of minor GC"}) == 1
+            OR absent(jvm_gc_pause_seconds_count{namespace="{{.Release.Namespace}}",action="end of minor GC"}) == 1
+          for: 5m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: warning
+            alert_group: absent
+          annotations:
+            message: >
+              Minor GC pause rate null or not reported for 5 min in "{{.Release.Namespace}}"
+            description: |
+              Alert     - Minor GC pause rate null or not reported for 5 min in "{{.Release.Namespace}}"
+              Namespace  - "{{.Release.Namespace}}"
+              Metrics    - jvm_gc_pause_seconds_count
+              Runbook   - https://infawiki.informatica.com/display/DF/Runbook+Template
+        - alert: mdmnext-service-memory-metaspace-usage-not-reporting
+          expr: >
+            absent(jvm_memory_used_bytes{namespace="{{.Release.Namespace}}",id="Metaspace"}) == 1
+            OR absent(jvm_memory_max_bytes{namespace="{{.Release.Namespace}}"}) == 1
+          for: 5m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: warning
+            alert_group: absent
+          annotations:
+            message: >
+              Memory metaspace null or not reported for 5 min in "{{.Release.Namespace}}"
+            description: |
+              Alert     - Memory Metaspace null or not reported for 5 min in "{{.Release.Namespace}}"
+              Namespace  - "{{.Release.Namespace}}"
+              Metrics    - jvm_memory_max_bytes
+              Runbook   - https://infawiki.informatica.com/display/DF/Runbook+Template

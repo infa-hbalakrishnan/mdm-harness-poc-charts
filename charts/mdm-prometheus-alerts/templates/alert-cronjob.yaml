@@ -1,0 +1,31 @@
+{{- if eq .Values.mdm.cloudServiceProvider "azure" }}
+---
+# ABSENT Cron
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: mdm-kms-cronjob
+  labels:
+    app: prometheus-operator
+    release: monitoringaddon
+spec:
+  groups:
+    - name: ./mdm-azure-kms-cronjob-failed.rules
+      rules:
+        - alert: mdmnext-azure-kms-key-rotation-cronjob-failed
+          expr: >
+            kube_job_status_failed{job_name=~"azure-kms-key.*"} > 0
+          for: 10m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: critical
+            alert_group: monitoring
+          annotations:
+            message: >
+              AZURE KMS key rotation cronjob failed to execute for 5m
+            description: |
+              Alert      - mdmnext-azure-kms-cronjob-failed
+              Namespace  - "{{.Release.Namespace}}"
+              Metrics    - mdm_azure_kms_key_rotation_cronjob
+              Runbook    - https://infawiki.informatica.com/display/DF/MDMNRB166+-+Azure+KMS+Key+Rotation+Cronjob++failed
+{{- end }}

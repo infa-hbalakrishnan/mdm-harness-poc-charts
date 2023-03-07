@@ -1,0 +1,602 @@
+{{- if .Values.monitoring.elasticsearch.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  labels:
+    prometheus: mdm
+    role: alert-rules-mdm
+  name: prometheus-rules-elasticsearch-operator
+spec:
+  groups:
+  - name: ./mdm-elasticsearch-operator.rules
+    rules:
+    - alert: mdmnext-elasticsearch-low-jvm-heap-threshold
+      expr: max(elasticsearch_clusterstats_indices_count{applicationrole="elasticsearch", pod_id="{{.Release.Namespace}}"}) / (max(elasticsearch_jvm_mem_heap_committed_in_bytes{node_roles ="master,ml,remote_cluster_client",pod_id="{{.Release.Namespace}}"}) / 1073741824) > {{.Values.monitoring.elasticsearch.threshold.indicesPerMasterGbHeap }}
+      for: 5m
+      labels:
+        severity: critical
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          Threshold for jvm heap size on ElasticSearch master nodes to service current amount of indices has reached for 5 min
+        description: |
+          Alert     - Jvm heap size on ElasticSearch master per indices = {{ "{{" }} $value {{ "}}" }}
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/display/DF/MDMNRB107+-+ElasticSearch+Vertical+Scaling
+    - alert: mdmnext-elasticsearch-shard-threshold
+      expr: max by (pod_id) (elasticsearch_clusterstats_indices_shards_total{pod_id="{{.Release.Namespace}}"}) / max by (pod_id) (elasticsearch_cluster_health_number_of_data_nodes{pod_id="{{.Release.Namespace}}"})/max by (pod_id)(elasticsearch_settings_max_shards_per_node{pod_id="{{.Release.Namespace}}"})*100 > {{.Values.monitoring.elasticsearch.threshold.shard }}
+      for: 5m
+      labels:
+        severity: critical
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          ElasticSearch Shard Threshold > {{.Values.monitoring.elasticsearch.threshold.shard}} for 5 min
+        description: |
+          Alert     - ElasticSearch Shard Threshold = {{ "{{" }} $value {{ "}}" }}
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/x/xDGlEg
+
+    - alert: mdmnext-elasticsearch-circuit-breaker-parent
+      expr: rate(elasticsearch_breakers_parent_tripped{pod_id="{{.Release.Namespace}}"}[5m]) > 0
+      for: 3m
+      labels:
+        severity: critical
+        teams: "{{.Values.monitoring.alertTeam}}"
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          ElasticSearch Circuit Breaker tripped Threshold > 0 for 3 min
+        description: |
+          Alert     - ElasticSearch Circuit Breaker Tripped Threshold = {{ "{{" }} $value {{ "}}" }}
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/display/DF/MDMNRB136+-+Elasticsearch+Circuit+Breaker+Alerts
+
+    - alert: mdmnext-elasticsearch-circuit-breaker-accounting
+      expr: rate(elasticsearch_breakers_accounting_tripped{pod_id="{{.Release.Namespace}}"}[5m]) > 0
+      for: 3m
+      labels:
+        severity: critical
+        teams: "{{.Values.monitoring.alertTeam}}"
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          ElasticSearch Circuit Breaker tripped Threshold > 0 for 3 min
+        description: |
+          Alert     - ElasticSearch Circuit Breaker Tripped Threshold = {{ "{{" }} $value {{ "}}" }}
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/display/DF/MDMNRB136+-+Elasticsearch+Circuit+Breaker+Alerts
+
+    - alert: mdmnext-elasticsearch-circuit-breaker-fielddata
+      expr: rate(elasticsearch_breakers_fielddata_tripped{pod_id="{{.Release.Namespace}}"}[5m]) > 0
+      for: 3m
+      labels:
+        severity: critical
+        teams: "{{.Values.monitoring.alertTeam}}"
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          ElasticSearch Circuit Breaker tripped Threshold > 0 for 3 min
+        description: |
+          Alert     - ElasticSearch Circuit Breaker Tripped Threshold = {{ "{{" }} $value {{ "}}" }}
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/display/DF/MDMNRB136+-+Elasticsearch+Circuit+Breaker+Alerts
+
+    - alert: mdmnext-elasticsearch-circuit-breaker-in_flight_requests
+      expr: rate(elasticsearch_breakers_in_flight_requests_tripped{pod_id="{{.Release.Namespace}}"}[5m]) > 0
+      for: 3m
+      labels:
+        severity: critical
+        teams: "{{.Values.monitoring.alertTeam}}"
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          ElasticSearch Circuit Breaker tripped Threshold > 0 for 3 min
+        description: |
+          Alert     - ElasticSearch Circuit Breaker Tripped Threshold = {{ "{{" }} $value {{ "}}" }}
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/display/DF/MDMNRB136+-+Elasticsearch+Circuit+Breaker+Alerts
+
+    - alert: mdmnext-elasticsearch-circuit-breaker-request
+      expr: rate(elasticsearch_breakers_request_tripped{pod_id="{{.Release.Namespace}}"}[5m]) > 0
+      for: 3m
+      labels:
+        severity: critical
+        teams: "{{.Values.monitoring.alertTeam}}"
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          ElasticSearch Circuit Breaker tripped Threshold > 0 for 3 min
+        description: |
+          Alert     - ElasticSearch Circuit Breaker Tripped Threshold = {{ "{{" }} $value {{ "}}" }}
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/display/DF/MDMNRB136+-+Elasticsearch+Circuit+Breaker+Alerts
+
+    - alert: mdmnext-elasticsearch-circuit-breaker-eql_sequence
+      expr: rate(elasticsearch_breakers_eql_sequence_tripped{pod_id="{{.Release.Namespace}}"}[5m]) > 0
+      for: 3m
+      labels:
+        severity: critical
+        teams: "{{.Values.monitoring.alertTeam}}"
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          ElasticSearch Circuit Breaker tripped Threshold > 0 for 3 min
+        description: |
+          Alert     - ElasticSearch Circuit Breaker Tripped Threshold = {{ "{{" }} $value {{ "}}" }}
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/display/DF/MDMNRB136+-+Elasticsearch+Circuit+Breaker+Alerts
+
+    - alert: mdmnext-elasticsearch-circuit-breaker-model_inference
+      expr: rate(elasticsearch_breakers_model_inference_tripped{pod_id="{{.Release.Namespace}}"}[5m]) > 0
+      for: 3m
+      labels:
+        severity: critical
+        teams: "{{.Values.monitoring.alertTeam}}"
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          ElasticSearch Circuit Breaker tripped Threshold > 0 for 3 min
+        description: |
+          Alert     - ElasticSearch Circuit Breaker Tripped Threshold = {{ "{{" }} $value {{ "}}" }}
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/display/DF/MDMNRB136+-+Elasticsearch+Circuit+Breaker+Alerts
+
+    - alert: mdmnext-elasticsearch-indices-unassigned-shards
+      expr: sum by (instance,job,pod_id) (elasticsearch_indices_unassigned_shards{pod_id="{{.Release.Namespace}}"}) > 0
+      for: 5m
+      labels:
+        severity: critical
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          ElasticSearch indices unassigned shards > 0 for 5 min
+        description: |
+          Alert     - ElasticSearch indices unassigned shards = {{ "{{" }} $value {{ "}}" }}
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/x/xDGlEg
+    - alert: mdmnext-elasticsearch-cluster-health-status-yellow
+      expr: elasticsearch_cluster_health_status_code{pod_id="{{.Release.Namespace}}"} == 2
+      for: 60m
+      labels:
+        severity: critical
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          ElasticSearch cluster health is YELLOW for 60 min
+        description: |
+          Alert     - ElasticSearch cluster health = STATUS YELLOW
+          Status    - 1=GREEN, 2=YELLOW, 3=RED
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/x/xDGlEg
+    - alert: mdmnext-elasticsearch-cluster-health-status-red
+      expr: elasticsearch_cluster_health_status_code{pod_id="{{.Release.Namespace}}"} == 3
+      for: 1m
+      labels:
+        severity: critical
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          ElasticSearch cluster health is RED for 1 min
+        description: |
+          Alert     - ElasticSearch cluster health = STATUS RED
+          Status    - 1=GREEN, 2=YELLOW, 3=RED
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/x/xDGlEg
+    - alert: mdmnext-elasticsearch-indices-number-of-replicas
+      expr: elasticsearch_cluster_health_indices_number_of_replicas{pod_id="{{.Release.Namespace}}",index=~"mdm\\.next.*"} < {{.Values.elasticsearch.es_additional_replicas}}
+      for: 5m
+      labels:
+        severity: warning
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          ElasticSearch index number of replicas < {{.Values.monitoring.elasticsearch.alert.numberOfReplicas}} for 5 min
+        description: |
+          Alert     - ElasticSearch indices number of replicas = {{ "{{" }} $value {{ "}}" }}
+          Namespace - "{{.Release.Namespace}}"
+          Index     - {{ "{{" }} $labels.index {{ "}}" }}
+          Runbook   - https://infawiki.informatica.com/x/xDGlEg
+    - alert: mdmnext-elasticsearch-last-backup
+      expr: min(time() - elasticsearch_backups_end_time{applicationrole="elasticsearch",state="SUCCESS",pod_id="{{.Release.Namespace}}"}) by (pod_id,applicationrole)/60/60 > {{.Values.monitoring.elasticsearch.alert.lastBackupHours}}
+      labels:
+        severity: warning
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          ElasticSearch backup was NOT created during last {{.Values.monitoring.elasticsearch.alert.lastBackupHours}} hours
+        description: |
+          Alert     - Last ElasticSearch backup was made {{ "{{" }} $value {{ "}}" }} hours ago
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/x/xDGlEg
+    - alert: mdmnext-elasticsearch-retenion-days
+      expr: count((time()-(elasticsearch_backups_end_time{applicationrole="elasticsearch",pod_id="{{.Release.Namespace}}"}))/86400 > {{.Values.monitoring.elasticsearch.alert.backupRetentionDays}}) by (pod_id,applicationrole,snapshot)
+      for: 15m
+      labels:
+        severity: warning
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          ElasticSearch backups are NOT cleared and backups are older {{.Values.monitoring.elasticsearch.alert.backupRetentionDays}} days
+        description: |
+          Alert     - {{ "{{" }} $value {{ "}}" }} ElasticSearch backups are older than configured retnetion days
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/display/DF/MDMNRB145+-+ElasticSearch+backups+are+NOT+cleared+and+backups+are+older
+
+    {{- if eq .Values.elasticsearch.replication.enabled false }}
+    - alert: mdmnext-elasticsearch-crr-index-warning
+      expr: avg(elasticsearch_clusterstats_indices_count) > {{ .Values.elasticsearch.replication.indexCountThreshold }}
+      for: 30m
+      labels:
+        severity: warning
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          Index count threshold reached to make switch to Cross Region Replication
+        description: |
+          Alert     - Switch to Cross Region Replication. Index count reached an average of {{ "{{" }} $value {{ "}}" }} in the last 30 min
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/x/pQzXGw
+
+    - alert: mdmnext-elasticsearch-crr-docs-warning
+      expr: avg(elasticsearch_clusterstats_indices_docs_count) > {{ .Values.elasticsearch.replication.docsCountThreshold }}
+      for: 30m
+      labels:
+        severity: warning
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          Docs count threshold reached to make switch to Cross Region Replication
+        description: |
+          Alert     - Switch to Cross Region Replication. Docs count reached an average of {{ "{{" }} $value {{ "}}" }} in the last 30 min
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/x/pQzXGw
+    {{- end }}
+
+    {{- if and (.Values.elasticsearch.replication.enabled) (eq .Values.elasticsearch.replication.region "dr") }}
+    - alert: mdmnext-elasticsearch-crr-index-comparison
+      expr: elasticsearch_crr_primary_indices_count{pod_id="{{.Release.Namespace}}"} - elasticsearch_crr_dr_indices_count{pod_id="{{.Release.Namespace}}"} > 0
+      for: 15m
+      labels:
+        severity: critical
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          ElasticSearch DR Region has fewer indices than in Primary Region
+        description: |
+          Alert     - DR Region elasticsearch has {{ "{{" }} $value {{ "}}" }} less indices than the Primary Region
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/x/xDGlEg
+
+    - alert: mdmnext-elasticsearch-crr-doc-comparison
+      expr: elasticsearch_crr_dr_docs_count{pod_id="{{.Release.Namespace}}"} - elasticsearch_crr_primary_docs_count{pod_id="{{.Release.Namespace}}"} != 0
+      for: 15m
+      labels:
+        severity: critical
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          ElasticSearch DR Region has different number of docs than in Primary Region
+        description: |
+          Alert     - DR Region elasticsearch has different number (diff {{ "{{" }} $value {{ "}}" }}) of docs than in Primary Region
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/x/xDGlEg
+    - alert: mdmnext-elasticsearch-crr-checkpoint-comparison
+      expr: elasticsearch_crr_follow_stats_leader_global_checkpoint{pod_id="{{.Release.Namespace}}"} - elasticsearch_crr_follow_stats_follower_global_checkpoint{pod_id="{{.Release.Namespace}}"} > 0
+      for: 15m
+      labels:
+        severity: critical
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          ElasticSearch DR Region indices have smaller global checkpoint than in Primary Region
+        description: |
+          Alert     - DR Region elasticsearch {{ "{{" }} $labels.index {{ "}}" }} index {{ "{{" }} $labels.shard_id {{ "}}" }} shard has {{ "{{" }} $value {{ "}}" }} less global checkpoint than the Primary Region
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/x/xDGlEg
+    - alert: mdmnext-elasticsearch-crr-connection-status
+      expr: elasticsearch_crr_remote_connected{pod_id="{{.Release.Namespace}}"} == 0
+      for: 5m
+      labels:
+        severity: critical
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          ElasticSearch cross region replication connection from DR to Primary is DOWN for 5m or more
+        description: |
+          Alert     - Status of Elasticsearch corss region replication connection between DR and Primary is {{ "{{" }} $value {{ "}}" }} for more than 5 min
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/x/xDGlEg
+    - alert: mdmnext-elasticsearch-crr-number-of-connections
+      expr: (elasticsearch_crr_max_proxy_sockets{pod_id="{{.Release.Namespace}}"} - elasticsearch_crr_num_proxy_scokets_connected{pod_id="{{.Release.Namespace}}"}) != 0 
+      for: 5m
+      labels:
+        severity: warning
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          ElasticSearch cross region replication some of the available proxy sockets are not connected from DR to Primary
+        description: |
+          Alert     - {{ "{{" }} $value {{ "}}" }} available proxy sockets not connected between DR and Primary
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/x/xDGlEg
+    - alert: mdmnext-elasticsearch-crr-max-sockets
+      expr: elasticsearch_crr_max_proxy_sockets{pod_id="{{.Release.Namespace}}"} == 0
+      for: 5m
+      labels:
+        severity: critical
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          ElasticSearch cross region replication number of available proxy sockets from DR to Primary is ZERO
+        description: |
+          Alert     - {{ "{{" }} $value {{ "}}" }} proxy sockets are available between DR and Primary
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/x/xDGlEg
+    - alert: mdmnext-elasticsearch-crr-connected-sockets
+      expr: elasticsearch_crr_num_proxy_scokets_connected{pod_id="{{.Release.Namespace}}"} == 0
+      for: 5m
+      labels:
+        severity: critical
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          ElasticSearch cross region replication number of connected proxy sockets from DR to Primary is ZERO
+        description: |
+          Alert     - {{ "{{" }} $value {{ "}}" }} proxy sockets are connected between DR and Primary
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/x/xDGlEg
+    - alert: mdmnext-elasticsearch-crr-follow-pattern-status
+      expr: elasticsearch_crr_follow_pattern_active{pod_id="{{.Release.Namespace}}"} == 0
+      for: 5m
+      labels:
+        severity: critical
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          ElasticSearch cross region replication follow pattern is not active or disabled
+        description: |
+          Alert     - ElasticSearch cross region replication follow pattern is not active or disabled
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/x/xDGlEg
+    - alert: mdmnext-elasticsearch-crr-follower-read-exceptions
+      expr: rate(elasticsearch_crr_follow_stats_failed_read_requests[2m])  > {{ .Values.elasticsearch.replication.permissibleReadErrorsThreshold }}
+      for: 5m
+      labels:
+        severity: warning
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          ElasticSearch cross region replication failed read requests exceeded rate limit of {{ .Values.elasticsearch.replication.permissibleReadErrorsThreshold }} per second
+        description: |
+          Alert     - ElasticSearch cross region replication failed read requests: {{ "{{" }} $value {{ "}}" }} exceed threshold: {{ .Values.elasticsearch.replication.permissibleReadErrorsThreshold }}
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/x/oIUDI
+    - alert: mdmnext-elasticsearch-crr-follower-write-exceptions
+      expr: rate(elasticsearch_crr_follow_stats_failed_write_requests[2m])  > {{ .Values.elasticsearch.replication.permissibleWriteErrorsThreshold }}
+      for: 5m
+      labels:
+        severity: warning
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          ElasticSearch cross region replication failed write requests exceeded rate limit of {{ .Values.elasticsearch.replication.permissibleWriteErrorsThreshold }} per sec
+        description: |
+          Alert     - ElasticSearch cross region replication failed write requests: {{ "{{" }} $value {{ "}}" }} exceed threshold: {{ .Values.elasticsearch.replication.permissibleWriteErrorsThreshold }}
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/x/oIUDI
+    - alert: mdmnext-elasticsearch-crr-follower-state-exceptions
+      expr: rate(elasticsearch_crr_auto_follow_stats_number_of_failed_remote_cluster_state_requests[2m])  > {{ .Values.elasticsearch.replication.permissibleStateErrorsThreshold }}
+      for: 15m
+      labels:
+        severity: warning
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          ElasticSearch cross region replication failed cluster state read requests exceeded limit of {{ .Values.elasticsearch.replication.permissibleStateErrorsThreshold }}
+        description: |
+          Alert     - ElasticSearch cross region replication failed to retrieve the cluster state from primary: {{ "{{" }} $value {{ "}}" }} times, exceeded threshold: {{ .Values.elasticsearch.replication.permissibleStateErrorsThreshold }}
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/x/oIUDI
+    {{- end }}
+    - alert: mdmnext-elasticsearch-shard-threshold-not-reporting
+      expr: absent (elasticsearch_cluster_health_active_shards{pod_id="{{.Release.Namespace}}"}) == 1
+      for: 5m
+      labels:
+        severity: critical
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          ElasticSearch Shard Not Reporting
+        description: |
+          Alert     - ElasticSearch Shard Not Reporting
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/x/xDGlEg
+    - alert: mdmnext-elasticsearch-indices-unassigned-shards-not-reporting
+      expr: absent(elasticsearch_cluster_health_indices_unassigned_shards{pod_id="{{.Release.Namespace}}"}) == 1
+      for: 5m
+      labels:
+        severity: critical
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          ElasticSearch indices unassigned shards not reporting
+        description: |
+          Alert     - ElasticSearch indices unassigned shards not reporting
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/x/xDGlEg
+    - alert: mdmnext-elasticsearch-cluster-health-status-not reporting
+      expr: absent(elasticsearch_cluster_health_status_code{pod_id="{{.Release.Namespace}}"}) == 1
+      for: 5m
+      labels:
+        severity: critical
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          ElasticSearch cluster health not reporting
+        description: |
+          Alert     - ElasticSearch cluster health not reporting
+          Status    - 1=GREEN, 2=YELLOW, 3=RED
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/x/xDGlEg
+    - alert: mdmnext-elasticsearch-indices-number-of-replicas-not-reporting
+      expr: absent(elasticsearch_cluster_health_indices_number_of_replicas{pod_id="{{.Release.Namespace}}"}) == 1
+      for: 5m
+      labels:
+        severity: critical
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          ElasticSearch index number of replicas not reporting
+        description: |
+          Alert     - ElasticSearch indices number of replicas not reporting
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/x/xDGlEg
+    {{- if and (.Values.elasticsearch.replication.enabled) (eq .Values.elasticsearch.replication.region "dr") }}   
+    - alert: mdmnext-elasticsearch-crr-connection-status-not-reporting
+      expr: absent(elasticsearch_crr_remote_connected{pod_id="{{.Release.Namespace}}"}) == 1
+      for: 5m
+      labels:
+        severity: critical
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          Elasticsearch cross region replication connection status between DR and Primary not reported
+        description: |
+          Alert     - Elasticsearch cross region replication connection status between DR and Primary not reported
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/x/xDGlEg
+    - alert: mdmnext-elasticsearch-crr-follow-pattern-status-not-reporting
+      expr: absent(elasticsearch_crr_follow_pattern_active{pod_id="{{.Release.Namespace}}"}) == 1
+      for: 5m
+      labels:
+        severity: critical
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          Elasticsearch cross region replication follow pattern status not reported
+        description: |
+          Alert     - Elasticsearch cross region replication follow pattern status not reported
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/x/xDGlEg
+    - alert: mdmnext-elasticsearch-crr-max-sockets-not-reporting
+      expr: absent(elasticsearch_crr_max_proxy_sockets{pod_id="{{.Release.Namespace}}"}) == 1
+      for: 5m
+      labels:
+        severity: warning
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          Elasticsearch cross region replication max. socket connections not reported
+        description: |
+          Alert     - Elasticsearch cross region replication max. socket connections not reported
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/x/xDGlEg
+    - alert: mdmnext-elasticsearch-crr-connected-sockets-not-reporting
+      expr: absent(elasticsearch_crr_num_proxy_scokets_connected{pod_id="{{.Release.Namespace}}"}) == 1
+      for: 5m
+      labels:
+        severity: warning
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          Elasticsearch cross region replication number of sockets connected not reported
+        description: |
+          Alert     - Elasticsearch cross region replication number of sockets connected not reported
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/x/xDGlEg
+
+    - alert: mdmnext-elasticsearch-crr-follower-failed-read-requests-not-reporting
+      expr: absent(elasticsearch_crr_follow_stats_failed_read_requests{pod_id="{{.Release.Namespace}}"}) == 1
+      for: 5m
+      labels:
+        severity: warning
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          ElasticSearch cross region replication failed read requests is null or not reporting
+        description: |
+          Alert     - ElasticSearch cross region replication failed read requests is null or not reporting
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/x/oIUDI
+    - alert: mdmnext-elasticsearch-crr-follower-failed-write-requests-not-reporting
+      expr: absent(elasticsearch_crr_follow_stats_failed_write_requests{pod_id="{{.Release.Namespace}}"}) ==1
+      for: 5m
+      labels:
+        severity: warning
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          ElasticSearch cross region replication failed write requests is null or not reporting
+        description: |
+          Alert     - ElasticSearch cross region replication failed write requests is null or not reporting
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/x/oIUDI
+    - alert: mdmnext-elasticsearch-crr-follower-state-exceptions-not-reporting
+      expr: absent(elasticsearch_crr_auto_follow_stats_number_of_failed_remote_cluster_state_requests{pod_id="{{.Release.Namespace}}"}) == 1
+      for: 5m
+      labels:
+        severity: warning
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          ElasticSearch cross region replication number of failed remote cluster state requests is null or not reporting
+        description: |
+          Alert     - ElasticSearch cross region replication number of failed remote cluster state requests is null or not reporting is null or not reporting
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/x/oIUDI
+    - alert: elasticsearch-crr-follow-stats-leader-global-checkpoint-not-reporting
+      expr: absent(elasticsearch_crr_follow_stats_leader_global_checkpoint{pod_id="{{.Release.Namespace}}"}) == 1
+      for: 5m
+      labels:
+        severity: warning
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          ElasticSearch cross region replication leader global checkpoint stats are null or not reporting
+        description: |
+          Alert     - ElasticSearch cross region replication leader global checkpoint stats are null or not reporting
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/x/oIUDI
+    - alert: elasticsearch-crr-follow-stats-follower-global-checkpoint-not-reporting
+      expr: absent(elasticsearch_crr_follow_stats_follower_global_checkpoint{pod_id="{{.Release.Namespace}}"}) == 1
+      for: 5m
+      labels:
+        severity: warning
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          ElasticSearch cross region replication follower global checkpoint stats are null or not reporting
+        description: |
+          Alert     - ElasticSearch cross region replication follower global checkpoint stats are null or not reporting
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/x/oIUDI
+    - alert: mdmnext-elasticsearch-crr-primary-indices-not-reporting
+      expr: absent(elasticsearch_crr_primary_indices_count{pod_id="{{.Release.Namespace}}"}) == 1 or elasticsearch_crr_primary_indices_count{pod_id="{{.Release.Namespace}}"} == 0
+      for: 15m
+      labels:
+        severity: warning
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          Elasticsearch CRR - Primary indices count not reported or zero
+        description: |
+          Alert     - Elasticsearch CRR - Primary indices count not reported or zerp
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/x/xDGlEg
+    - alert: mdmnext-elasticsearch-crr-primary-docs-not-reporting
+      expr: absent(elasticsearch_crr_primary_docs_count{pod_id="{{.Release.Namespace}}"}) == 1 or elasticsearch_crr_primary_docs_count{pod_id="{{.Release.Namespace}}"} == 0
+      for: 15m
+      labels:
+        severity: warning
+        alert_group: elasticsearch
+      annotations:
+        message: >
+          Elasticsearch CRR - Primary indices count not reported or zero
+        description: |
+          Alert     - Elasticsearch CRR - Primary indices count not reported or zero
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/x/xDGlEg          
+    {{- end }}
+
+{{- end }}

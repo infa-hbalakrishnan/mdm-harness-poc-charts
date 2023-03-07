@@ -1,0 +1,426 @@
+---
+# KUBERNETES (only on CT Prometheus)
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: k8s-rules
+  labels:
+    app: prometheus-operator
+    release: monitoringaddon
+spec:
+  groups:
+    - name: ./mdm-k8s.rules
+      rules:
+      {{-  if eq .Values.mdm.cloudServiceProvider "azure" }}
+        - alert: mdmnext-azurefile-share-usage
+          expr: 100 * sum(kubelet_volume_stats_used_bytes{persistentvolumeclaim="{{.Values.azure.fileshare.pvc}}",namespace="{{.Release.Namespace}}"}) by (persistentvolumeclaim) /sum(kubelet_volume_stats_capacity_bytes{persistentvolumeclaim="{{.Values.azure.fileshare.pvc}}",namespace="{{.Release.Namespace}}"}) by (persistentvolumeclaim) >= {{ .Values.azure.fileshare.threshold }}
+          for: 5m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: critical
+            alert_group: monitoring
+          annotations:
+            message: >
+              {{ "{{" }} $labels.namespace {{ "}}" }} Azure FileShare usage is more than {{ "{{" }} .Values.azure.fileshare.threshold {{ "}}" }}
+            description: |
+              Alert     - {{ "{{" }} $labels.namespace {{ "}}" }} Azure FileShare {{ "{{" }} $labels.persistentvolumeclaim {{ "}}" }} is more than threshold
+              Namespace - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Runbook   - https://infawiki.informatica.com/display/DF/Runbook+Template
+        - alert: mdmnext-azurefile-share-usage-spark
+          expr: 100 * sum(kubelet_volume_stats_used_bytes{persistentvolumeclaim="{{.Values.azure.fileshare.pvc}}",namespace="{{.Values.monitoring.sparkNamespace}}"}) by (persistentvolumeclaim) /sum(kubelet_volume_stats_capacity_bytes{persistentvolumeclaim="{{.Values.azure.fileshare.pvc}}",namespace="{{.Values.monitoring.sparkNamespace}}"}) by (persistentvolumeclaim) >= {{ .Values.azure.fileshare.threshold }}
+          for: 5m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: critical
+            alert_group: monitoring
+          annotations:
+            message: >
+              {{ "{{" }} $labels.namespace {{ "}}" }} Azure FileShare usage is more than {{ "{{" }} .Values.azure.fileshare.threshold {{ "}}" }}
+            description: |
+              Alert     - {{ "{{" }} $labels.namespace {{ "}}" }} Azure FileShare {{ "{{" }} $labels.persistentvolumeclaim {{ "}}" }} is more than threshold
+              Namespace - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Runbook   - https://infawiki.informatica.com/display/DF/Runbook+Template              
+      {{- end }}        
+        - alert: mdmnext-prometheus-target-down
+          expr: up{namespace="{{ .Release.Namespace }}"} == 0
+          for: "{{ .Values.monitoring.prometheusTargets.alertHoldTime }}"
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: critical
+            alert_group: monitoring
+          annotations:
+            message: >
+              {{ "{{" }} $labels.namespace {{ "}}" }} Prometheus target {{ "{{" }} $labels.job {{ "}}" }} is down
+            description: |
+              Alert     - {{ "{{" }} $labels.namespace {{ "}}" }} Prometheus target {{ "{{" }} $labels.job {{ "}}" }} is down
+              Namespace - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Runbook   - https://infawiki.informatica.com/display/DF/Runbook+Template
+        {{- if .Values.monitoring.kubernetes.deployments.enabled }}
+        - alert: mdmnext-kubernetes-container-restarts-critical
+          expr: >
+            delta(kube_pod_container_status_restarts_total{namespace="{{.Release.Namespace}}", pod!~".*jaeger.*"}[5m]) >= 4
+          for: 5m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: critical
+            alert_group: kubernetes
+          annotations:
+            message: >
+              Too Many Pod Restarts {{ "{{" }} $labels.pod {{ "}}" }} in {{ "{{" }} $labels.namespace {{ "}}" }} 
+            description: |
+              Alert     - {{ "{{" }} $labels.namespace {{ "}}" }} Container Restarted = {{ "{{" }} $value | printf "%.2f" {{ "}}" }} times over 5 min
+              Service   - {{ "{{" }} $labels.service {{ "}}" }}
+              Namespace - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Pod       - {{ "{{" }} $labels.pod {{ "}}" }}
+              Instance  - {{ "{{" }} $labels.instance {{ "}}" }}
+              Runbook   - https://infawiki.informatica.com/x/kzGlEg
+        - alert: mdmnext-kubernetes-unmatched-deployments
+          expr: kube_deployment_spec_replicas{namespace="{{.Release.Namespace}}"} - kube_deployment_status_replicas_available{namespace="{{.Release.Namespace}}"} > 0
+          for: 15m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: critical
+            alert_group: kubernetes
+          annotations:
+            message: >
+              {{ "{{" }} $labels.namespace {{ "}}" }}, {{ "{{" }} $labels.job {{ "}}" }}, Kubernetes Unmatched Deployments > 0 for 15 min
+            description: |
+              Alert     - {{ "{{" }} $labels.namespace {{ "}}" }} Kubernetes Unmatched Deployments = {{ "{{" }} $value {{ "}}" }}
+              Service   - {{ "{{" }} $labels.service {{ "}}" }}
+              Namespace - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Pod       - {{ "{{" }} $labels.pod {{ "}}" }}
+              Instance  - {{ "{{" }} $labels.instance {{ "}}" }}
+              Runbook   - https://infawiki.informatica.com/x/kzGlEg
+        - alert: mdmnext-kubernetes-deployments-unavailable-critical
+          expr: >
+            kube_deployment_status_replicas_unavailable{namespace="{{.Release.Namespace}}"} > 0
+          for: 5m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: critical
+            alert_group: kubernetes
+          annotations:
+            message: >
+              {{ "{{" }} $labels.namespace {{ "}}" }}, {{ "{{" }} $labels.deployment {{ "}}" }} pods unavailable > 0 for 5 min
+            description: |
+              Alert      - {{ "{{" }} $labels.namespace {{ "}}" }} Pods Unavailable {{ "{{" }} $labels.value {{ "}}" }}
+              Deployment - {{ "{{" }} $labels.deployment {{ "}}" }}
+              Namespace  - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Instance   - {{ "{{" }} $labels.instance {{ "}}" }}
+              Runbook    - https://infawiki.informatica.com/x/kzGlEg
+        - alert: mdmnext-kubernetes-mdm-pod-not-ready-critical
+          expr: >
+            sum by (namespace, pod, alert_group) (max by (namespace, pod, alert_group) (kube_pod_status_phase{job="kube-state-metrics",namespace="{{.Release.Namespace}}",phase=~"Pending|Unknown"})
+            * on (namespace, pod, alert_group) group_left(owner_kind) max by (namespace, pod, owner_kind, alert_group) (kube_pod_owner{owner_kind!="Job",namespace="{{.Release.Namespace}}"})) > 0
+          for: 5m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: critical
+            alert_group: kubernetes
+          annotations:
+            message: >
+              {{ "{{" }} $labels.namespace {{ "}}" }}, {{ "{{" }} $labels.pod {{ "}}" }} pod not ready for 5 min
+            description: |
+              Alert      - {{ "{{" }} $labels.namespace {{ "}}" }} Pod not ready for {{ "{{" }} $labels.pod {{ "}}" }}
+              Deployment - {{ "{{" }} $labels.pod {{ "}}" }}
+              Namespace  - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Runbook    - https://infawiki.informatica.com/x/kzGlEg
+        - alert: mdmnext-kubernetes-container-waiting-critical
+          expr: >
+            kube_pod_container_status_waiting_reason{namespace="{{.Release.Namespace}}"} > 0
+          for: 5m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: critical
+            alert_group: kubernetes
+          annotations:
+            message: >
+              {{ "{{" }} $labels.namespace {{ "}}" }}, container-{{ "{{" }} $labels.container {{ "}}" }} in POD {{ "{{" }} $labels.pod {{ "}}" }} is in waiting state for 5 min
+            description: |
+              Alert      - {{ "{{" }} $labels.namespace {{ "}}" }} Container - {{ "{{" }} $labels.container {{ "}}" }} is in Waiting state on {{ "{{" }} $labels.pod {{ "}}" }}
+              Deployment - {{ "{{" }} $labels.deployment {{ "}}" }}
+              Namespace  - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Instance   - {{ "{{" }} $labels.instance {{ "}}" }}
+              Runbook    - https://infawiki.informatica.com/x/kzGlEg
+        {{- end }}
+        - alert: coredns-deployment-replica-mismatch
+          expr: >
+            (kube_deployment_spec_replicas{deployment="corednsaddon-coredns", namespace="kube-system"} != kube_deployment_status_replicas_available{deployment="corednsaddon-coredns",namespace="kube-system"}) 
+            and (changes(kube_deployment_status_replicas_updated{deployment="corednsaddon-coredns", namespace="kube-system"} [5m]) == 0)
+          for: 5m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: critical
+            alert_group: kubernetes
+          annotations:
+            message: >
+              coredns deployment {{ "{{" }} $labels.namespace {{ "}}" }}/{{ "{{" }} $labels.deployment {{ "}}" }} has not matched the expected number of replicas for longer than 5 minutes.
+            description: |
+              Alert      -  Coredns deployment {{ "{{" }} $labels.namespace {{ "}}" }}/{{ "{{" }} $labels.deployment {{ "}}" }} replica mismatch
+              Namespace  - {{ "{{" }} $labels.namespace {{ "}}" }}
+        - alert: coredns-cpu-usage-critical
+          expr: >
+           rate(container_cpu_usage_seconds_total{container="coredns",namespace="kube-system"}[5m]) *100 /
+           on(namespace,pod) kube_pod_container_resource_limits_cpu_cores{container="coredns",namespace="kube-system"} >= {{ .Values.monitoring.coreDNS.cpuThreshold }}
+          for: 5m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: critical
+            alert_group: kubernetes
+          annotations:
+            message: >
+              coredns {{ "{{" }} $labels.pod {{ "}}" }} cpu usage is more than {{ .Values.monitoring.coreDNS.cpuThreshold }} for 5 min in {{ "{{" }} $labels.namespace {{ "}}" }} 
+            description: |
+              Alert      - coredns {{ "{{" }} $labels.pod {{ "}}" }} High cpu usage in {{ "{{" }} $labels.namespace {{ "}}" }} 
+              Namespace  - {{ "{{" }} $labels.namespace {{ "}}" }}
+        - alert: mdmnext-kubernetes-mdm-hpa-at-max-capacity
+          expr: sum by (hpa, namespace) (kube_hpa_spec_max_replicas{namespace="{{.Release.Namespace}}"} - kube_hpa_status_desired_replicas{namespace="{{.Release.Namespace}}"}) == 0
+          for: 1h
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: warning
+            alert_group: kubernetes
+          annotations:
+            message: >
+              WARNING - HPA is at max capacity for 1 hour in {{ "{{" }} $labels.namespace {{ "}}" }}
+            description: |
+              Alert     - HPA is at Max capacity = {{ "{{" }} $value | printf "%.2f" {{ "}}" }}% / 1 hour in {{ "{{" }} $labels.namespace {{ "}}" }}
+              HPA       - {{ "{{" }} $labels.hpa {{ "}}" }}
+              Namespace - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Runbook   - https://infawiki.informatica.com/x/kzGlEg
+        - alert: mdmnext-kubernetes-mdm-spark-namespace-quota-at-max-capacity
+          expr: max by (resource, namespace) (kube_resourcequota{namespace="{{.Values.monitoring.sparkNamespace}}", type="used"}) / max by (resource, namespace) (kube_resourcequota{namespace="{{.Values.monitoring.sparkNamespace}}", type="hard"}) * 100 >= {{.Values.spark.resourcequota}}
+          for: 3m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: warning
+            alert_group: kubernetes
+          annotations:
+            message: >
+               WARNING - MDM Spark namespace resource quota usage is above {{.Values.spark.resourcequota}}% for 3 mins in {{ "{{" }} $labels.namespace {{ "}}" }}
+            description: |
+              Alert     - MDM Spark namespace resource quota usage above threshold for 3 mins in {{ "{{" }} $labels.namespace {{ "}}" }}
+              Namespace - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Runbook   - https://infawiki.informatica.com/display/DF/MDMNRB109+-+Increase+spark+resourcequota
+        - alert: mdmnext-kubernetes-spark-jobs-running-longer
+          expr: ((time() - kube_pod_start_time{namespace="{{.Values.monitoring.sparkNamespace}}"}) / 60 > 60) / on(pod, instance, namespace) (kube_pod_status_phase{namespace="{{.Values.monitoring.sparkNamespace}}", phase="Running"}) != +Inf
+          for: 5m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: warning
+            alert_group: kubernetes
+          annotations:
+            message: >
+              WARNING - MDM Spark job {{ "{{" }} $labels.pod {{ "}}" }} running for more than 60 minutes in {{ "{{" }} $labels.namespace {{ "}}" }}
+            description: |
+              Alert     - MDM Spark job {{ "{{" }} $labels.pod {{ "}}" }} in {{ "{{" }} $labels.namespace {{ "}}" }} running for more than 60 minutes in {{ "{{" }} $labels.namespace {{ "}}" }}
+              Namespace - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Pod       - {{ "{{" }} $labels.pod {{ "}}" }}
+              Instance  - {{ "{{" }} $labels.instance {{ "}}" }}
+              Runbook   - https://infawiki.informatica.com/x/kzGlEg
+        {{- if .Values.monitoring.orgAlerts.enabled }}
+        - alert: new-org-found
+          expr: (mdm_org_provisioning_orgs{namespace="{{ .Release.Namespace }}"}) - (mdm_org_provisioning_orgs{namespace="{{ .Release.Namespace }}"} offset {{ .Values.monitoring.orgAlerts.offset }}) > 0
+          for: 15m
+          labels:
+            teams: "{{ .Values.monitoring.alertTeam }}"
+            severity: warning
+            alert_group: kubernetes
+          annotations:
+            message: >
+              WARNING - New org added in POD {{ .Release.Namespace }} 
+            description: |
+              Alert     - New org added in POD {{ .Release.Namespace }} 
+              Namespace - {{ "{{" }} .Values.Namespace {{ "}}" }}
+        {{- end }}
+
+---
+# Alerts for null metrics or metrics not reported
+# KUBERNETES (only on CT Prometheus)
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: k8s-rules-not-reporting
+  labels:
+    app: prometheus-operator
+    release: monitoringaddon
+spec:
+  groups:
+    - name: ./mdm-k8s-not-reporting.rules
+      rules:
+      {{-  if eq .Values.mdm.cloudServiceProvider "azure" }}
+        - alert: mdmnext-azurefile-share-usage-not-reporting
+          expr: >
+            absent(kubelet_volume_stats_used_bytes{namespace="{{.Release.Namespace}}"}) == 1
+          for: 5m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: warning
+            alert_group: absent
+          annotations:
+            message: >
+              Azure fileshare usage is either null or not reporting {{ "{{" }} $labels.namespace {{ "}}" }}
+            description: |
+              Alert     - Azure fileshare usage is either null or not reporting over 5 min
+              Namespace  - "{{.Release.Namespace}}"
+              Metrics    - kubelet_volume_stats_used_bytes
+              Runbook   - https://infawiki.informatica.com/x/kzGlEg
+        - alert: mdmnext-azurefile-share-usage-spark-not-reporting
+          expr: >
+            absent(kubelet_volume_stats_used_bytes{namespace="{{.Values.monitoring.sparkNamespace}}"}) == 1
+          for: 15m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: warning
+            alert_group: absent
+          annotations:
+            message: >
+              Azure fileshare usage is either null or not reporting {{ "{{" }} $labels.namespace {{ "}}" }}
+            description: |
+              Alert     - Azure fileshare usage is either null or not reporting over 5 min
+              Namespace  - "{{.Values.monitoring.sparkNamespace}}"
+              Metrics    - kubelet_volume_stats_used_bytes
+              Runbook   - https://infawiki.informatica.com/x/kzGlEg          
+      {{- end }}       
+        - alert: mdmnext-kubernetes-container-restarts-not-reporting
+          expr: >
+            absent(kube_pod_container_status_restarts_total{namespace="{{.Release.Namespace}}", pod!~".*jaeger.*"}) == 1
+          for: 5m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: warning
+            alert_group: absent
+          annotations:
+            message: >
+              {{ "{{" }} $labels.namespace {{ "}}" }} Metrics for Pod Restarts either null or not reporting {{ "{{" }} $labels.pod {{ "}}" }}
+            description: |
+              Alert     - {{ "{{" }} $labels.namespace {{ "}}" }} Metrics for Pod Restarts either null or not reporting over 5 min
+              Namespace  - "{{.Release.Namespace}}"
+              Metrics    - kube_pod_container_status_restarts_total
+              Runbook   - https://infawiki.informatica.com/x/kzGlEg
+        - alert: mdmnext-kubernetes-unmatched-deployments-not-reporting
+          expr: absent(kube_deployment_spec_replicas{namespace="{{.Release.Namespace}}"}) == 1 OR
+            absent(kube_deployment_status_replicas_available{namespace="{{.Release.Namespace}}"}) == 1
+          for: 15m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: warning
+            alert_group: absent
+          annotations:
+            message: >
+              {{ "{{" }} $labels.namespace {{ "}}" }} Metrics for Kubernetes Unmatched Deployments null or not reporting for 15 min {{ "{{" }} $labels.job {{ "}}" }}
+            description: |
+              Alert     - {{ "{{" }} $labels.namespace {{ "}}" }} Metrics for Kubernetes Unmatched Deployments null or not reporting for 15 min
+              Namespace  - "{{.Release.Namespace}}"
+              Metrics    - kube_deployment_status_replicas_available
+              Runbook   - https://infawiki.informatica.com/x/kzGlEg
+        - alert: mdmnext-kubernetes-deployments-unavailable-not-reporting
+          expr: >
+            absent(kube_deployment_status_replicas_unavailable{namespace="{{.Release.Namespace}}"}) == 1
+          for: 5m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: warning
+            alert_group: absent
+          annotations:
+            message: >
+              {{ "{{" }} $labels.namespace {{ "}}" }} pods availability metrics null or not reported for 5 min {{ "{{" }} $labels.deployment {{ "}}" }} pods
+            description: |
+              Alert      - {{ "{{" }} $labels.namespace {{ "}}" }} pods availability metrics null or not reported for 5 min
+              Namespace  - "{{.Release.Namespace}}"
+              Metrics    - kube_deployment_status_replicas_unavailable
+              Runbook    - https://infawiki.informatica.com/x/kzGlEg
+
+# Alerts for thanos sidecar
+# KUBERNETES (only on CT Prometheus)
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: mdm-thanos-sidecar
+  labels:
+    app: prometheus-operator
+    release: monitoringaddon
+spec:
+  groups:
+    - name: ./mdm-thanos-sidecar.rules
+      rules:
+        - alert: ThanosSidecarBucketOperationsFailed
+          expr: |
+            sum by (job, instance) (rate(thanos_objstore_bucket_operation_failures_total{job=~".*thanos-sidecar.*"}[5m])) > 0
+          for: 5m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: critical
+          annotations:
+            message: >
+              {{ "{{" }} $labels.namespace {{ "}}" }} Thanos Sidecar {{ "{{" }} $labels.instance {{ "}}" }} bucket operations are failing
+            description: |
+              Alert      - {{ "{{" }} $labels.namespace {{ "}}" }} Thanos Sidecar bucket operations are failing
+              Namespace  - "{{.Release.Namespace}}"
+              Metrics    - thanos_objstore_bucket_operation_failures_total
+              Runbook    - https://infawiki.informatica.com/display/DF/MDMNRB164+-+Thanos+Sidecar+bucket+operations+are+failing
+        - alert: ThanosSidecarNoConnectionToStartedPrometheus
+          expr: |
+            thanos_sidecar_prometheus_up{job=~".*thanos-sidecar.*"} == 0
+            AND on (namespace, pod)
+            prometheus_tsdb_data_replay_duration_seconds != 0
+          for: 5m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: critical
+          annotations:
+            message: >
+              {{ "{{" }} $labels.namespace {{ "}}" }} Thanos Sidecar {{ "{{" }} $labels.instance {{ "}}" }} is unhealthy.
+            description: |
+              Alert      - Thanos Sidecar cannot access Prometheus, even though Prometheus seems healthy and has reloaded WAL.
+              Namespace  - "{{.Release.Namespace}}"
+              Metrics    - thanos_sidecar_prometheus_up
+              Runbook    - https://infawiki.informatica.com/display/DF/MDMNRB164+-+Thanos+Sidecar+bucket+operations+are+failing
+        - alert: thanos-objstore-bucket-operation-failures-not-reporting
+          expr: >
+            absent(thanos_objstore_bucket_operation_failures_total{job=~".*thanos-sidecar.*"}) == 1
+          for: 5m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: warning
+            alert_group: absent
+          annotations:
+            message: >
+              {{ "{{" }} $labels.namespace {{ "}}" }} thanos_objstore_bucket_operation_failures_total missing metrics {{ "{{" }} $labels.instance {{ "}}" }} pods
+            description: |
+              Alert      - thanos_objstore_bucket_operation_failures_total missing metrics
+              Namespace  - "{{.Release.Namespace}}"
+              Metrics    - thanos_objstore_bucket_operation_failures_total
+              Runbook    - https://infawiki.informatica.com/display/DF/MDMNRB164+-+Thanos+Sidecar+bucket+operations+are+failing
+        - alert: thanos-sidecar-prometheus-not-reporting
+          expr: >
+            absent(thanos_sidecar_prometheus_up{job=~".*thanos-sidecar.*"}) == 1
+          for: 5m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: warning
+            alert_group: absent
+          annotations:
+            message: >
+              {{ "{{" }} $labels.namespace {{ "}}" }} thanos_sidecar_prometheus_up missing metrics
+            description: |
+              Alert      - thanos_sidecar_prometheus_up missing metrics
+              Namespace  - "{{.Release.Namespace}}"
+              Metrics    - thanos_sidecar_prometheus_up
+              Runbook    - https://infawiki.informatica.com/display/DF/MDMNRB164+-+Thanos+Sidecar+bucket+operations+are+failing 
+        - alert: prometheus-tsdb-data-replay-not-reporting
+          expr: >
+            absent(prometheus_tsdb_data_replay_duration_seconds{}) == 1
+          for: 5m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: warning
+            alert_group: absent
+          annotations:
+            message: >
+              {{ "{{" }} $labels.namespace {{ "}}" }} prometheus_tsdb_data_replay_duration_seconds missing metrics
+            description: |
+              Alert      - prometheus_tsdb_data_replay_duration_seconds missing metrics
+              Namespace  - "{{.Release.Namespace}}"
+              Metrics    - prometheus_tsdb_data_replay_duration_seconds
+              Runbook    - https://infawiki.informatica.com/display/DF/MDMNRB164+-+Thanos+Sidecar+bucket+operations+are+failing           
