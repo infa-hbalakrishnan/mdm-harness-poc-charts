@@ -1,0 +1,255 @@
+---
+# MDM Service TLS
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  namespace: "{{.Release.Namespace}}"
+  name: mdm-intermediate-ca
+  labels:
+    {{- if .Values.monitoring.cloudtrust.prometheus.enabled }}
+    app: prometheus-operator
+    release: monitoringaddon
+    {{- else }}
+    prometheus: mdm
+    role: alert-rules-mdm
+    {{- end }}
+spec:
+  groups:
+    - name: ./mdm-intermediate-ca-critical.rules
+      rules:
+        - alert: mdmnext-intermediate-ca-critical
+          expr: >
+            count by (namespace) (tls_certificate_int_ca_valid_days{namespace="{{.Release.Namespace}}"} < {{ .Values.monitoring.certAlerts.critical.days }}  ) / count by (namespace) (tls_certificate_int_ca_valid_days{namespace="{{.Release.Namespace}}"} )
+          for: 1m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: critical
+            alert_group: certificate
+          annotations:
+            message: >
+              {{ "{{" }} $labels.namespace {{ "}}" }} MDM intermediate CA certificate about to expire <= {{ .Values.monitoring.certAlerts.critical.days }} days
+            description: |
+              Alert      - {{ "{{" }} $labels.namespace {{ "}}" }} MDM intermediate CA certificate expires within {{ "{{" }} {{ .Values.monitoring.certAlerts.critical.days }} | printf "%.2f" {{ "}}" }} days
+              Namespace  - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Runbook    - https://infawiki.informatica.com/display/DF/Runbook+Template
+    - name: ./mdm-intermediate-ca-warning.rules
+      rules:
+        - alert: mdmnext-intermediate-ca-warning
+          expr: >
+            count by (namespace) (tls_certificate_int_ca_valid_days{namespace="{{.Release.Namespace}}"} < {{ .Values.monitoring.certAlerts.warning.days }}  ) / count by (namespace) (tls_certificate_int_ca_valid_days{namespace="{{.Release.Namespace}}"} )
+          for: 1m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: warning
+            alert_group: certificate
+          annotations:
+            message: >
+              {{ "{{" }} $labels.namespace {{ "}}" }} MDM intermediate CA certificate about to expire <= {{ .Values.monitoring.certAlerts.warning.days }} days
+            description: |
+              Alert      - {{ "{{" }} $labels.namespace {{ "}}" }} MDM intermediate CA certificate expires within {{ "{{" }} {{ .Values.monitoring.certAlerts.warning.days }} | printf "%.2f" {{ "}}" }} days
+              Namespace  - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Runbook    - https://infawiki.informatica.com/display/DF/Runbook+Template
+---
+# MDM Service Root TLS
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  namespace: "{{.Release.Namespace}}"
+  name: root-ca-certificate
+  labels:
+    {{- if .Values.monitoring.cloudtrust.prometheus.enabled }}
+    app: prometheus-operator
+    release: monitoringaddon
+    {{- else }}
+    prometheus: mdm
+    role: alert-rules-mdm
+    {{- end }}
+spec:
+  groups:
+    - name: ./root-ca-certificate-warning.rules
+      rules:
+        - alert: mdmnext-root-ca-certificate-warning
+          expr: >
+            count by (namespace) (tls_certificate_root_ca_valid_days{namespace="{{.Release.Namespace}}"} < {{ .Values.monitoring.certAlerts.warning.days }}  ) / count by (namespace) (tls_certificate_root_ca_valid_days{namespace="{{.Release.Namespace}}"} )
+          for: 1m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: warning
+            alert_group: certificate
+          annotations:
+            message: >
+              {{ "{{" }} $labels.namespace {{ "}}" }} Root CA certificate about to expire <= {{ .Values.monitoring.certAlerts.warning.days }} days
+            description: |
+              Alert      - {{ "{{" }} $labels.namespace {{ "}}" }} Root CA certificate expires within {{ "{{" }} {{ .Values.monitoring.certAlerts.warning.days }} | printf "%.2f" {{ "}}" }} days
+              Namespace  - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Runbook    - https://infawiki.informatica.com/display/DF/Runbook+Template
+    - name: ./root-ca-certificate-critical.rules
+      rules:
+        - alert: mdmnext-root-ca-certificate-critical
+          expr: >
+            count by (namespace) (tls_certificate_root_ca_valid_days{namespace="{{.Release.Namespace}}"} < {{ .Values.monitoring.certAlerts.critical.days }}  ) / count by (namespace) (tls_certificate_root_ca_valid_days{namespace="{{.Release.Namespace}}"} )
+          for: 1m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: critical
+            alert_group: certificate
+          annotations:
+            message: >
+              {{ "{{" }} $labels.namespace {{ "}}" }} Root CA certificate about to expire <= {{ .Values.monitoring.certAlerts.critical.days }} days
+            description: |
+              Alert      - {{ "{{" }} $labels.namespace {{ "}}" }} Root CA certificate expires within {{ "{{" }} {{ .Values.monitoring.certAlerts.critical.days }} | printf "%.2f" {{ "}}" }} days
+              Namespace  - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Runbook    - https://infawiki.informatica.com/display/DF/Runbook+Template
+---
+# MDM Service Key
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  namespace: "{{.Release.Namespace}}"
+  name: mdm-services-certificate
+  labels:
+    {{- if .Values.monitoring.cloudtrust.prometheus.enabled }}
+    app: prometheus-operator
+    release: monitoringaddon
+    {{- else }}
+    prometheus: mdm
+    role: alert-rules-mdm
+    {{- end }}
+spec:
+  groups:
+    - name: ./mdm-services-certificate-warning.rules
+      rules:
+        - alert: mdmnext-services-certificate-warning
+          expr: >
+            count by (namespace) (tls_certificate_key_valid_days{namespace="{{.Release.Namespace}}"} < {{ .Values.monitoring.certAlerts.warning.days }}  ) / count by (namespace) (tls_certificate_key_valid_days{namespace="{{.Release.Namespace}}"} )
+          for: 1m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: warning
+            alert_group: certificate
+          annotations:
+            message: >
+              {{ "{{" }} $labels.namespace {{ "}}" }} MDM services certificates about to expire <= {{ .Values.monitoring.certAlerts.warning.days }} days
+            description: |
+              Alert      - {{ "{{" }} $labels.namespace {{ "}}" }} MDM services certificates expires within {{ "{{" }} {{ .Values.monitoring.certAlerts.warning.days }} | printf "%.2f" {{ "}}" }} days
+              Namespace  - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Runbook    - https://infawiki.informatica.com/display/DF/Runbook+Template
+    - name: ./mdm-services-certificate-critical.rules
+      rules:
+        - alert: mdmnext-services-certificate-critical
+          expr: >
+            count by (namespace) (tls_certificate_key_valid_days{namespace="{{.Release.Namespace}}"} < {{ .Values.monitoring.certAlerts.critical.days }}  ) / count by (namespace) (tls_certificate_key_valid_days{namespace="{{.Release.Namespace}}"} )
+          for: 1m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: critical
+            alert_group: certificate
+          annotations:
+            message: >
+              {{ "{{" }} $labels.namespace {{ "}}" }} MDM services certificates about to expire <= {{ .Values.monitoring.certAlerts.critical.days }} days
+            description: |
+              Alert      - {{ "{{" }} $labels.namespace {{ "}}" }} MDM services certificates expires within {{ "{{" }} {{ .Values.monitoring.certAlerts.critical.days }} | printf "%.2f" {{ "}}" }} days
+              Namespace  - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Runbook    - https://infawiki.informatica.com/display/DF/Runbook+Template
+---
+# ABSENT MDM Service Intermediate TLS
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  namespace: "{{.Release.Namespace}}"
+  name: mdm-intermediate-ca-not-reporting
+  labels:
+    {{- if .Values.monitoring.cloudtrust.prometheus.enabled }}
+    app: prometheus-operator
+    release: monitoringaddon
+    {{- else }}
+    prometheus: mdm
+    role: alert-rules-mdm
+    {{- end }}
+spec:
+  groups:
+    - name: ./mdm-intermediate-ca-critical-not-reporting.rules
+      rules:
+        - alert: mdmnext-intermediate-ca-not-reporting
+          expr: >
+            absent(tls_certificate_int_ca_valid_days{namespace="{{.Release.Namespace}}"}) == 1
+          for: 5m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: warning
+            alert_group: certificate
+          annotations:
+            message: >
+              {{ "{{" }} $labels.namespace {{ "}}" }} MDM intermediate CA certificate expiry null or not reported
+            description: |
+              Alert      - {{ "{{" }} $labels.namespace {{ "}}" }} MDM intermediate CA certificate expiry null or not reported
+              Namespace  - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Runbook    - https://infawiki.informatica.com/display/DF/Runbook+Template
+---
+# ABSENT MDM Service Root TLS
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  namespace: "{{.Release.Namespace}}"
+  name: root-ca-certificate-not-reporting
+  labels:
+    {{- if .Values.monitoring.cloudtrust.prometheus.enabled }}
+    app: prometheus-operator
+    release: monitoringaddon
+    {{- else }}
+    prometheus: mdm
+    role: alert-rules-mdm
+    {{- end }}
+spec:
+  groups:
+    - name: ./root-ca-certificate-warning-not-reporting.rules
+      rules:
+        - alert: mdmnext-root-ca-certificate-not-reporting
+          expr: >
+            absent(tls_certificate_root_ca_valid_days{namespace="{{.Release.Namespace}}"}) == 1
+          for: 5m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: warning
+            alert_group: certificate
+          annotations:
+            message: >
+              {{ "{{" }} $labels.namespace {{ "}}" }} Root CA certificate expiry null or not reported
+            description: |
+              Alert      - {{ "{{" }} $labels.namespace {{ "}}" }} Root CA certificate expiry null or not reported
+              Namespace  - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Runbook    - https://infawiki.informatica.com/display/DF/Runbook+Template
+---
+# ABSENT MDM Service Key
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  namespace: "{{.Release.Namespace}}"
+  name: mdm-services-certificate-not-reporting
+  labels:
+    {{- if .Values.monitoring.cloudtrust.prometheus.enabled }}
+    app: prometheus-operator
+    release: monitoringaddon
+    {{- else }}
+    prometheus: mdm
+    role: alert-rules-mdm
+    {{- end }}
+spec:
+  groups:
+    - name: ./mdm-services-certificate-warning-not-reporting.rules
+      rules:
+        - alert: mdmnext-services-certificate-not-reporting
+          expr: >
+            absent(tls_certificate_key_valid_days{namespace="{{.Release.Namespace}}"}) == 1
+          for: 5m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: warning
+            alert_group: certificate
+          annotations:
+            message: >
+              {{ "{{" }} $labels.namespace {{ "}}" }} MDM services certificates expiry null or not reported
+            description: |
+              Alert      - {{ "{{" }} $labels.namespace {{ "}}" }} MDM services certificates expiry null or not reported
+              Namespace  - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Runbook    - https://infawiki.informatica.com/display/DF/Runbook+Template

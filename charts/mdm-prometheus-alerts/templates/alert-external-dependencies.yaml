@@ -1,0 +1,155 @@
+---
+# VAULT CONSUL IICS ARTIFACTORY MONITORING
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  namespace: "{{.Release.Namespace}}"
+  name: http-response
+  labels:
+    prometheus: mdm
+    role: alert-rules-mdm
+spec:
+  groups:
+    - name: ./http-response-code.rules
+      rules:
+        - alert: mdmnext-http-consul-response
+          expr: >
+            http_response_result_code{namespace="{{.Release.Namespace}}",target="consul"} > 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            message: >
+              {{ "{{" }} $labels.server {{ "}}" }} endpoint not reachable >= 1 minute
+            description: |
+              Alert     - Not Reachable, result is - {{ "{{" }} $labels.result {{ "}}" }}
+              Server    - {{ "{{" }} $labels.server {{ "}}" }}
+              Namespace - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Runbook   - https://infawiki.informatica.com/x/Yy6lEg
+        - alert: mdmnext-http-iics-ids-response
+          expr: >
+            http_response_result_code{namespace="{{.Release.Namespace}}",target="iics-ids-svc"} > 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            message: >
+              {{ "{{" }} $labels.server {{ "}}" }} endpoint not reachable >= 1 minute
+            description: |
+              Alert     - Not Reachable, result is - {{ "{{" }} $labels.result {{ "}}" }}
+              Server    - {{ "{{" }} $labels.server {{ "}}" }}
+              Namespace - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Runbook   - https://infawiki.informatica.com/x/Yy6lEg
+        - alert: mdmnext-http-iics-pod-response
+          expr: >
+            http_response_result_code{namespace="{{.Release.Namespace}}",target="iics-pod-svc"} > 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            message: >
+              {{ "{{" }} $labels.server {{ "}}" }} endpoint not reachable >= 1 minute
+            description: |
+              Alert     - Not Reachable, result is - {{ "{{" }} $labels.result {{ "}}" }}
+              Server    - {{ "{{" }} $labels.server {{ "}}" }}
+              Namespace - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Runbook   - https://infawiki.informatica.com/x/Yy6lEg
+        - alert: mdmnext-http-cai-pod-response
+          expr: >
+            http_response_result_code{namespace="{{.Release.Namespace}}",target="cai-pod-svc"} > 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            message: >
+              {{ "{{" }} $labels.server {{ "}}" }} endpoint not reachable >= 1 minute
+            description: |
+              Alert     - Not Reachable, result is - {{ "{{" }} $labels.result {{ "}}" }}, due to {{ "{{" }} $labels.status_code {{ "}}" }} http response-code
+              Server    - {{ "{{" }} $labels.server {{ "}}" }}
+              Namespace - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Runbook   - https://infawiki.informatica.com/x/Yy6lEg
+        - alert: mdmnext-http-dq-pod-response
+          expr: >
+            http_response_result_code{namespace="{{.Release.Namespace}}",target="dq-pod-svc"} > 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            message: >
+              {{ "{{" }} $labels.server {{ "}}" }} endpoint not reachable >= 1 minute
+            description: |
+              Alert     - Not Reachable, result is - {{ "{{" }} $labels.result {{ "}}" }}
+              Server    - {{ "{{" }} $labels.server {{ "}}" }}
+              Namespace - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Runbook   - https://infawiki.informatica.com/x/Yy6lEg
+        - alert: mdmnext-http-dis-pod-response
+          expr: >
+            http_response_result_code{namespace="{{.Release.Namespace}}",target="dis-pod-svc"} > 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            message: >
+              {{ "{{" }} $labels.server {{ "}}" }} endpoint not reachable >= 1 minute
+            description: |
+              Alert     - Not Reachable, result is - {{ "{{" }} $labels.result {{ "}}" }}
+              Server    - {{ "{{" }} $labels.server {{ "}}" }}
+              Namespace - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Runbook   - https://infawiki.informatica.com/x/Yy6lEg
+        - alert: mdmnext-http-artifactory-response
+          expr: >
+            http_response_result_code{namespace="{{.Release.Namespace}}",target="artifactory"} > 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            message: >
+              {{ "{{" }} $labels.server {{ "}}" }} endpoint not reachable >= 5 minute
+            description: |
+              Alert     - Not Reachable, result is - {{ "{{" }} $labels.result {{ "}}" }}
+              Server    - {{ "{{" }} $labels.server {{ "}}" }}
+              Namespace - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Runbook   - https://infawiki.informatica.com/x/Yy6lEg
+        - alert: mdmnext-http-vault-response
+          expr: >
+            http_response_result_code{namespace="{{.Release.Namespace}}",target="vault"} > 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            message: >
+              {{ "{{" }} $labels.server {{ "}}" }} endpoint not reachable >= 1 minute
+            description: |
+              Alert     - Not Reachable, result is - {{ "{{" }} $labels.result {{ "}}" }}
+              Server    - {{ "{{" }} $labels.server {{ "}}" }}
+              Namespace - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Runbook   - https://infawiki.informatica.com/x/Yy6lEg
+---
+# ABSENT, VAULT CONSUL IICS ARTIFACTORY MONITORING
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  namespace: "{{.Release.Namespace}}"
+  name: http-response-not-reporting
+  labels:
+    prometheus: mdm
+    role: alert-rules-mdm
+spec:
+  groups:
+    - name: ./http-response-code-not-reporting.rules
+      rules:
+        - alert: mdmnext-http-reponse-not-reporting
+          expr: >
+            absent(http_response_result_code{namespace="{{.Release.Namespace}}"}) == 1
+          for: 5m
+          labels:
+            severity: warning
+            alert_group: absent
+          annotations:
+            message: >
+              {{ "{{" }} $labels.server {{ "}}" }} http response null or not reported for 5 min
+            description: |
+              Alert     - Http reponse null or not reported for 5 min
+              Namespace  - "{{.Release.Namespace}}"
+              Metrics    - http_response_result_code
+              Runbook   - https://infawiki.informatica.com/x/eCdqDg

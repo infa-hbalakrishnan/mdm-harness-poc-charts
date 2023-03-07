@@ -1,0 +1,61 @@
+{{- if .Values.monitoring.efs.enabled }}
+---
+# ABSENT EFS
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  namespace: "{{.Release.Namespace}}"
+  name: efs-rules-not-reporting
+  labels:
+    prometheus: mdm
+    role: alert-rules-mdm
+spec:
+  groups:
+  {{-  if eq .Values.mdm.cloudServiceProvider "aws" }}
+    - name: ./mdm-efs-not-reporting.rules
+      rules:
+        - alert: mdmnext-efs-metered-io-bytes-average-not-reporting
+          expr: absent(cloudwatch_aws_efs_metered_io_bytes_average) == 1
+          for: 15m
+          labels:
+            severity: critical
+            alert_group: absent
+          annotations:
+            message: >
+              AWS EFS metered-io-bytes-average metric is null or not reporting for 15 min
+            description: |
+              Alert      - mdmnext-efs-metered-io-bytes-average-not-reporting
+              Namespace  - "{{.Release.Namespace}}"
+              Metrics    - cloudwatch_aws_efs_metered_io_bytes_average
+              Runbook    - https://infawiki.informatica.com/display/DF/Runbook+Template
+        - alert: mdmnext-efs-permitted-throughput-average-not-reporting
+          expr: absent(cloudwatch_aws_efs_permitted_throughput_average) == 1
+          for: 15m
+          labels:
+            severity: critical
+            alert_group: absent
+          annotations:
+            message: >
+              AWS EFS permitted-throughput-average metric is null or not reporting for 15 min
+            description: |
+              Alert      - mdmnext-efs-permitted-throughput-average-not-reporting
+              Namespace  - "{{.Release.Namespace}}"
+              Metrics    - cloudwatch_aws_efs_permitted_throughput_average
+              Runbook    - https://infawiki.informatica.com/display/DF/Runbook+Template
+    - name: ./mdm-efs.rules
+      rules:
+        - alert: mdmnext-efs-high-throughput-utilization
+          expr: >
+            cloudwatch_aws_efs_metered_io_bytes_average/cloudwatch_aws_efs_permitted_throughput_average*100 >  {{ .Values.monitoring.efs.throughputThreshold }}
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            message: >
+              AWS EFS io utilization is higher than 80% of permitted throughput.
+            description: |
+              Alert      -  mdmnext-efs-high-throughput-utilization
+              Namespace  - "{{.Release.Namespace}}"
+              Runbook    - https://infawiki.informatica.com/display/DF/Runbook+Template
+  {{- end }}
+{{- end }}

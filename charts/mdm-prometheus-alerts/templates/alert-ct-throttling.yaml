@@ -1,0 +1,56 @@
+---
+# CPU THROTTLING
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: mdmnext-cpu-throttling
+  labels:
+    app: prometheus-operator
+    release: monitoringaddon
+spec:
+  groups:
+    - name: ./mdm-cpu-throttling.rules
+      rules:
+        - alert: mdmnext-cpu-throttling
+          expr: rate(container_cpu_cfs_throttled_seconds_total{namespace=~"{{ .Release.Namespace }}", container!="POD", image!=""}[15m]) > {{ .Values.mdm.alert.cpuThrottleRate }}
+          for: "{{ .Values.mdm.alert.cpuThrottlePeriod }}"
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: critical
+            alert_group: throttling
+          annotations:
+            message: >
+              CPU Throttling {{ .Values.mdm.alert.cpuThrottleRate }} for more than {{ .Values.mdm.alert.cpuThrottlePeriod }} in {{ "{{" }} $labels.namespace {{ "}}" }}
+            description: |
+              Alert     - CPU Throttling on {{ "{{" }} $labels.pod {{ "}}" }} in {{ "{{" }} $labels.namespace {{ "}}" }}
+              Namespace - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Pod - {{ "{{" }} $labels.pod {{ "}}" }}
+              Runbook   - https://infawiki.informatica.com/display/DF/MDMNRB130+-+MDMNext+CPU+Throttling?src=contextnavpagetreemode
+---
+# SPARK CPU THROTTLING
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: mdmnext-spark-cpu-throttling
+  labels:
+    app: prometheus-operator
+    release: monitoringaddon
+spec:
+  groups:
+    - name: ./mdm-spark-cpu-throttling.rules
+      rules:
+        - alert: mdmnext-spark-cpu-throttling
+          expr: rate(container_cpu_cfs_throttled_seconds_total{namespace=~"{{ .Release.Namespace }}spark", container!="POD", image!=""}[15m]) > {{ .Values.spark.alert.cpuThrottleRate }}
+          for: "{{ .Values.spark.alert.cpuThrottlePeriod }}"
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: critical
+            alert_group: throttling
+          annotations:
+            message: >
+              Spark CPU Throttling {{ .Values.spark.alert.cpuThrottleRate }} for more than {{ .Values.spark.alert.cpuThrottlePeriod }} in {{ "{{" }} $labels.namespace {{ "}}" }}
+            description: |
+              Alert     - CPU Throttling on {{ "{{" }} $labels.pod {{ "}}" }} in {{ "{{" }} $labels.namespace {{ "}}" }}
+              Namespace - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Pod - {{ "{{" }} $labels.pod {{ "}}" }}
+              Runbook   - https://infawiki.informatica.com/display/DF/MDMNRB130+-+MDMNext+CPU+Throttling?src=contextnavpagetreemode

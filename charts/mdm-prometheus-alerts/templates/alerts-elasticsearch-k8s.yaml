@@ -1,0 +1,132 @@
+{{- if .Values.monitoring.elasticsearch.enabled }}
+# ECK KUBERNETES (only on CT Prometheus)
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: mdm-eck-k8s-rules
+  labels:
+    app: prometheus-operator
+    release: monitoringaddon
+spec:
+  groups:
+  - name: ./mdm-eck.rules
+    rules:
+    - alert: mdmnext-eck-cpu-usage-critical
+      expr: >
+        rate(container_cpu_usage_seconds_total{namespace="{{.Release.Namespace}}",container="elasticsearch"}[5m])*100 /
+        on (namespace,pod) kube_pod_container_resource_limits{resource="cpu",container="elasticsearch",namespace="{{.Release.Namespace}}"}
+        >= {{.Values.monitoring.elasticsearch.threshold.cpu}}
+      for: 5m
+      labels:
+        teams: "{{.Values.monitoring.alertTeam}}"
+        severity: critical
+        alert_group: system
+      annotations:
+        message: >
+          ECK High cpu usage {{ "{{" }} $value | printf "%.2f" {{ "}}" }} observed in {{ "{{" }} $labels.pod {{ "}}" }} @ {{.Release.Namespace}}
+        description: |
+          Alert     - high cpu usage in ECK in {{ "{{" }} $labels.namespace {{ "}}" }}
+          Pod       - {{ "{{" }} $labels.pod {{ "}}" }}
+          Namespace - {{ "{{" }} $labels.namespace {{ "}}" }}
+          Runbook   - https://infawiki.informatica.com/x/kzGlEg
+    - alert: mdmnext-eck-memory-usage-critical
+      expr: >
+        (container_memory_usage_bytes{namespace="{{.Release.Namespace}}",container="elasticsearch"}/
+        container_spec_memory_limit_bytes{namespace="{{.Release.Namespace}}",container="elasticsearch"})*100 >= {{.Values.monitoring.elasticsearch.threshold.memory}}
+      for: 5m
+      labels:
+        teams: "{{.Values.monitoring.alertTeam}}"
+        severity: critical
+        alert_group: system
+      annotations:
+        message: >
+          ECK High memory usage observed in {{ "{{" }} $labels.pod {{ "}}" }} @ {{.Release.Namespace}}
+        description: |
+          Alert     - High memory usage in ECK in {{ "{{" }} $labels.namespace {{ "}}" }}
+          Pod       - {{ "{{" }} $labels.pod {{ "}}" }}
+          Namespace - {{ "{{" }} $labels.namespace {{ "}}" }}
+          Runbook   - https://infawiki.informatica.com/x/kzGlEg
+    - alert: mdmnext-eck-disk-usage-critical
+      expr: >
+        (1-kubelet_volume_stats_available_bytes{namespace="{{.Release.Namespace}}",persistentvolumeclaim=~"elasticsearch.*"}/
+        kubelet_volume_stats_capacity_bytes{namespace="{{.Release.Namespace}}",persistentvolumeclaim=~"elasticsearch.*"})*100 >= {{.Values.monitoring.elasticsearch.threshold.disk}}
+      for: 5m
+      labels:
+        teams: "{{.Values.monitoring.alertTeam}}"
+        severity: critical
+        alert_group: system
+      annotations:
+        message: >
+          ECK High disk usage observed in {{ "{{" }} $labels.persistentvolumeclaim {{ "}}" }} @ {{.Release.Namespace}}
+        description: |
+          Alert     - High disk usage in ECK in {{ "{{" }} $labels.namespace {{ "}}" }}
+          Volumecalim - {{ "{{" }} $labels.persistentvolumeclaim {{ "}}" }}
+          Namespace - {{ "{{" }} $labels.namespace {{ "}}" }}
+          Runbook   - https://infawiki.informatica.com/x/kzGlEg
+          
+    - alert: mdmnext-elasticsearch-container-not-running
+      expr: >
+        absent(kube_pod_container_status_running{container="elasticsearch",namespace="{{.Release.Namespace}}"}==1)==1
+      labels:
+        teams: "{{.Values.monitoring.alertTeam}}"
+        severity: critical
+        alert_group: system
+      annotations:
+        message: >
+         Elasticsearch container is not running in "{{.Release.Namespace}}"
+         description: |
+           Alert     - Elasticsearch container is not running in "{{.Release.Namespace}}"
+           Pod       - elasticsearch
+           Namespace - "{{.Release.Namespace}}"
+           Runbook   - https://infawiki.informatica.com/x/Ms2-Ig
+
+# Alerts for null metrics or metrics not reported
+    - alert: mdmnext-eck-cpu-usage-critical-not-reporting
+      expr: >
+        absent(container_cpu_usage_seconds_total{namespace="{{.Release.Namespace}}"}) == 1 OR absent(kube_pod_container_resource_limits{resource="cpu",unit="core",container="elasticsearch",namespace="{{.Release.Namespace}}"}) == 1 
+      for: 5m
+      labels:
+        teams: "{{.Values.monitoring.alertTeam}}"
+        severity: critical
+        alert_group: system
+      annotations:
+        message: >
+          ECK cpu usage metrics not reporting {{.Release.Namespace}}
+        description: |
+          Alert     - cpu usage in ECK not reporting in "{{.Release.Namespace}}"
+          Pod       - elasticsearch
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/x/kzGlEg
+    - alert: mdmnext-eck-memory-usage-critical-not-reporting
+      expr: >
+        absent(container_memory_usage_bytes{container="elasticsearch",namespace="{{.Release.Namespace}}"}) == 1 OR absent(kube_pod_container_resource_limits{resource="cpu",unit="core",container="elasticsearch",namespace="{{.Release.Namespace}}"}) == 1
+      for: 5m
+      labels:
+        teams: "{{.Values.monitoring.alertTeam}}"
+        severity: critical
+        alert_group: system
+      annotations:
+        message: >
+          ECK memory usage not reporting in {{.Release.Namespace}}
+        description: |
+          Alert     - memory usage in ECK not reporting in "{{.Release.Namespace}}"
+          Pod       - elasticsearch
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/x/kzGlEg
+    - alert: mdmnext-eck-disk-usage-critical-not-reporting
+      expr: >
+        absent(kubelet_volume_stats_available_bytes{persistentvolumeclaim=~"elasticsearch.*",namespace="{{.Release.Namespace}}"}) == 1 OR absent(kubelet_volume_stats_capacity_bytes{persistentvolumeclaim=~"elasticsearch.*",namespace="{{.Release.Namespace}}"}) == 1
+      for: 5m
+      labels:
+        teams: "{{.Values.monitoring.alertTeam}}"
+        severity: critical
+        alert_group: system
+      annotations:
+        message: >
+          ECK disk usage not reporting in {{.Release.Namespace}}
+        description: |
+          Alert     - Disk usage in ECK not reporting in "{{.Release.Namespace}}"
+          Pod       - elasticsearch
+          Namespace - "{{.Release.Namespace}}"
+          Runbook   - https://infawiki.informatica.com/x/kzGlEg
+{{- end }}

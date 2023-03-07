@@ -1,0 +1,4 @@
+apiVersion: v2
+name: mdm-prometheus-alerts
+version: 0.0.1
+description: Deployment of MDM prometheus alerts

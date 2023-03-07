@@ -1,0 +1,56 @@
+---
+# Other Resource Certificates (elastic, ics, etc)
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  namespace: "{{.Release.Namespace}}"
+  name: ingress-rules-certs
+  labels:
+    prometheus: mdm
+    role: alert-rules-mdm
+spec:
+  groups:
+    - name: ./ingress-certs.rules
+      rules:
+        - alert: mdmnext-ingress-cert-expire-warning
+          expr: >
+            x509_cert_expiry{namespace="{{.Release.Namespace}}",common_name!="mdm-transport",verification_error!="x509: certificate signed by unknown authority"}/60/60/24 < {{ .Values.monitoring.certAlerts.warning.days }}
+          labels:
+            severity: warning
+          annotations:
+            message: >
+              {{ "{{" }} $labels.common_name {{ "}}" }}, expired < {{ .Values.monitoring.certAlerts.warning.days }} days
+            description: |
+              Alert      - Certificate expires  in {{ "{{" }} $value | printf "%.2f" {{ "}}" }} days
+              Namespace  - {{ "{{" }} $labels.namespace {{ "}}" }}
+              CommonName - {{ "{{" }} $labels.common_name {{ "}}" }}
+              IssuerName - {{ "{{" }} $labels.issuer_common_name {{ "}}" }}
+              Source     - {{ "{{" }} $labels.source {{ "}}" }}
+              Runbook    - https://infawiki.informatica.com/x/fCRqDg
+---
+# Ingress Certificates
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  namespace: "{{.Release.Namespace}}"
+  name: ingress-rules-certs-not-reporting
+  labels:
+    prometheus: mdm
+    role: alert-rules-mdm
+spec:
+  groups:
+    - name: ./ingress-certs-not-reporting.rules
+      rules:
+        - alert: mdmnext-ingress-cert-expire-not-reporting
+          expr: >
+            absent(x509_cert_expiry{namespace="{{.Release.Namespace}}"}) == 1
+          labels:
+            severity: warning
+          annotations:
+            message: >
+              Ingress certificate expiry is null or not reported
+            description: |
+              Alert      - Ingress certificate expiry is null or not reported
+              Namespace  - "{{.Release.Namespace}}"
+              Metrics    - x509_cert_expiry
+              Runbook    - https://infawiki.informatica.com/x/fCRqDg

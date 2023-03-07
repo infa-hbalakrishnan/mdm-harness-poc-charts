@@ -1,0 +1,200 @@
+---
+# LOGS EVENTS
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  namespace: "{{.Release.Namespace}}"
+  name: service-rules-logs
+  labels:
+    {{- if .Values.monitoring.cloudtrust.prometheus.enabled }}
+    app: prometheus-operator
+    release: monitoringaddon
+    {{- else }}
+    prometheus: mdm
+    role: alert-rules-mdm
+    {{- end }}
+spec:
+  groups:
+    - name: ./mdm-error-logs.rules
+      rules:
+        - alert: mdmnext-service-mongo-heartbeat-critical
+          expr: >
+            mongodb_heartbeat_failed_seconds_max{namespace="{{.Release.Namespace}}"} != 0
+          for: 5m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: critical
+            alert_group: service
+          annotations:
+            message: >
+              {{ "{{" }} $labels.service {{ "}}" }} {{ "{{" }} $labels.namespace {{ "}}" }}, mongo heartbeat failed for 5 min
+            description: |
+              Alert     - {{ "{{" }} $labels.service {{ "}}" }}, mongo heartbeat failed for 5 min
+              Service   - {{ "{{" }} $labels.service {{ "}}" }}
+              Namespace - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Pod       - {{ "{{" }} $labels.pod {{ "}}" }}
+              Host      - {{ "{{" }} $labels.mongo_host {{ "}}" }}
+              Runbook   - https://infawiki.informatica.com/display/DF/MDMNRB135+-+Mongo+Heartbeat+Alerts
+        - alert: mdmnext-service-error-log-critical
+          expr: >
+            rate(logback_events_total{namespace="{{.Release.Namespace}}",level="error"}[5m]) /
+            rate(logback_events_total{namespace="{{.Release.Namespace}}"}[5m]) * 100 > 5
+          for: 30m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: critical
+            alert_group: logs
+          annotations:
+            message: >
+              {{ "{{" }} $labels.service {{ "}}" }}, error logs > 5 logs/sec for 30 min
+            description: |
+              Alert     - Error Logs = {{ "{{" }} $value | printf "%.2f" {{ "}}" }} / 30 min
+              Service   - {{ "{{" }} $labels.service {{ "}}" }}
+              Namespace - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Pod       - {{ "{{" }} $labels.pod {{ "}}" }}
+              Instance  - {{ "{{" }} $labels.instance {{ "}}" }}
+              Runbook   - https://infawiki.informatica.com/display/DF/MDMNRB131+-+MDMNext+Service+Error+Logs
+---
+# HTTP / TOMCAT
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  namespace: "{{.Release.Namespace}}"
+  name: service-rules-http
+  labels:
+    {{- if .Values.monitoring.cloudtrust.prometheus.enabled }}
+    app: prometheus-operator
+    release: monitoringaddon
+    {{- else }}
+    prometheus: mdm
+    role: alert-rules-mdm
+    {{- end }}
+spec:
+  groups:
+    - name: ./mdm-http.rules
+      rules:
+        - alert: mdmnext-service-http-response-time-critical
+          expr: >
+            rate(http_server_requests_seconds_sum{namespace="{{.Release.Namespace}}"}[1m]) >= 10
+          for: 15m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: critical
+            alert_group: service
+          annotations:
+            message: >
+              {{ "{{" }} $labels.service {{ "}}" }}, http response time >= 10/sec for 15 min
+            description: |
+              Alert     - HTTP Response Time = {{ "{{" }} $value | printf "%.2f" {{ "}}" }}s / 15 min
+              Service   - {{ "{{" }} $labels.service {{ "}}" }}
+              Namespace - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Pod       - {{ "{{" }} $labels.pod {{ "}}" }}
+              Instance  - {{ "{{" }} $labels.instance {{ "}}" }}
+              Runbook   - https://infawiki.informatica.com/display/DF/Runbook+Template
+        - alert: mdmnext-service-tomcat-busy-threads-critical
+          expr: >
+            avg_over_time(tomcat_threads_busy{namespace="{{.Release.Namespace}}"}[5m]) > 150
+            OR avg_over_time(tomcat_threads_busy_threads{namespace="{{.Release.Namespace}}"}[5m]) > 150
+          for: 30m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: critical
+            alert_group: service
+          annotations:
+            message: >
+              {{ "{{" }} $labels.service {{ "}}" }}, tomcat busy threads > 150 for 30 min
+            description: |
+              Alert     - Tomcat Busy Threads = {{ "{{" }} $value | printf "%.2f" {{ "}}" }}s / 30 min
+              Service   - {{ "{{" }} $labels.service {{ "}}" }}
+              Namespace - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Pod       - {{ "{{" }} $labels.pod {{ "}}" }}
+              Instance  - {{ "{{" }} $labels.instance {{ "}}" }}
+              Runbook   - https://infawiki.informatica.com/display/DF/Runbook+Template
+        - alert: mdmnext-service-tomcat-blocked-threads-critical
+          expr: >
+            tomcat_threads_current_threads/tomcat_threads_config_max_threads{namespace="{{.Release.Namespace}}"} > 0.8
+          for: 10m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: critical
+            alert_group: service
+          annotations:
+            message: >
+              {{ "{{" }} $labels.service {{ "}}" }}, tomcat blocked threads > 80% for 10 min
+            description: |
+              Alert     - Tomcat Blocked Threads = {{ "{{" }} $value | printf "%.2f" {{ "}}" }}s / 30 min
+              Service   - {{ "{{" }} $labels.service {{ "}}" }}
+              Namespace - {{ "{{" }} $labels.namespace {{ "}}" }}
+              Pod       - {{ "{{" }} $labels.pod {{ "}}" }}
+              Instance  - {{ "{{" }} $labels.instance {{ "}}" }}
+              Runbook   - https://infawiki.informatica.com/display/DF/Runbook+Template
+---
+# ABSENT LOGS EVENTS
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  namespace: "{{.Release.Namespace}}"
+  name: service-rules-logs-not-reporting
+  labels:
+    {{- if .Values.monitoring.cloudtrust.prometheus.enabled }}
+    app: prometheus-operator
+    release: monitoringaddon
+    {{- else }}
+    prometheus: mdm
+    role: alert-rules-mdm
+    {{- end }}
+spec:
+  groups:
+    - name: ./mdm-error-logs-not-reporting.rules
+      rules:
+        - alert: mdmnext-service-error-log-not-reporting
+          expr: >
+            absent(logback_events_total{namespace="{{.Release.Namespace}}"}) == 1
+          for: 5m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: warning
+            alert_group: absent
+          annotations:
+            message: >
+              {{ "{{" }} $labels.service {{ "}}" }}, error logs metrics null or not reported for 5 min
+            description: |
+              Alert     - Error Logs metrics null or not reported for 5 min
+              Namespace  - "{{.Release.Namespace}}"
+              Metrics    - logback_events_total
+              Runbook   - https://infawiki.informatica.com/display/DF/Runbook+Template
+---
+# ABSENT, HTTP / TOMCAT
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  namespace: "{{.Release.Namespace}}"
+  name: service-rules-http-not-reporting
+  labels:
+    {{- if .Values.monitoring.cloudtrust.prometheus.enabled }}
+    app: prometheus-operator
+    release: monitoringaddon
+    {{- else }}
+    prometheus: mdm
+    role: alert-rules-mdm
+    {{- end }}
+spec:
+  groups:
+    - name: ./mdm-http-not-reporting.rules
+      rules:
+        - alert: mdmnext-service-http-response-time-not-reporting
+          expr: >
+            absent(http_server_requests_seconds_sum{namespace="{{.Release.Namespace}}"}) == 1
+          for: 5m
+          labels:
+            teams: "{{.Values.monitoring.alertTeam}}"
+            severity: warning
+            alert_group: absent
+          annotations:
+            message: >
+              {{ "{{" }} $labels.service {{ "}}" }}, http response time null or not reported for 5 min
+            description: |
+              Alert     - HTTP Response Time null or not reported for5 min
+              Namespace  - "{{.Release.Namespace}}"
+              Metrics    - http_server_requests_seconds_sum
+              Runbook   - https://infawiki.informatica.com/display/DF/Runbook+Template
